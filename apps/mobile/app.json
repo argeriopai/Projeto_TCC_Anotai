@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "ANOTAÍ",
+    "slug": "anotai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#100050"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.anotai.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Permitir que o ANOTAÍ acesse sua câmera para registrar fotos de serviços e peças.",
+        "NSPhotoLibraryUsageDescription": "Permitir que o ANOTAÍ acesse suas fotos para registrar imagens de serviços e peças.",
+        "NSPhotoLibraryAddUsageDescription": "Permitir que o ANOTAÍ salve fotos na sua galeria."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#100050"
+      },
+      "package": "com.anotai.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "@react-native-voice/voice",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O ANOTAÍ precisa de acesso às suas fotos para registrar serviços e peças.",
+          "cameraPermission": "O ANOTAÍ precisa de acesso à câmera para tirar fotos dos serviços e peças."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Permitir que o ANOTAÍ acesse suas fotos.",
+          "savePhotosPermission": "Permitir que o ANOTAÍ salve fotos.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ]
+  }
+}

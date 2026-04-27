@@ -1,0 +1,58 @@
+# =============================================================================
+# ANOTAÍ - docker-compose.yml
+# Decisão técnica: Usamos Docker para garantir que o banco de dados
+# rode de forma idêntica em qualquer máquina de desenvolvimento,
+# evitando o famoso problema "funciona na minha máquina".
+# =============================================================================
+
+version: '3.9'
+
+services:
+  # ---------------------------------------------------------------------------
+  # BANCO DE DADOS PostgreSQL
+  # Versão 16 escolhida por ser a mais estável e LTS em 2026.
+  # O PostgreSQL foi escolhido por suportar JSON nativo (para dados flexíveis
+  # como configurações de notificação) e ter excelente performance com
+  # os tipos de consultas que o ANOTAÍ vai precisar (filtros por data,
+  # placa, tipo de serviço - RF11, RF12).
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: anotai_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-anotai_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-anotai_pass_2026}
+      POSTGRES_DB: ${DB_NAME:-anotai_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Volume nomeado garante que os dados NÃO se percam ao reiniciar o container
+      - anotai_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Verifica se o banco está pronto antes de iniciar a API
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-anotai_user} -d ${DB_NAME:-anotai_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # REDIS - Cache e Filas de Notificação
+  # Usado para armazenar sessões JWT e gerenciar a fila de lembretes
+  # de manutenção preventiva (RF14 - envio de notificações).
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: anotai_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - anotai_redis_data:/data
+
+# Volumes nomeados garantem persistência dos dados entre reinicializações
+volumes:
+  anotai_postgres_data:
+    driver: local
+  anotai_redis_data:
+    driver: local

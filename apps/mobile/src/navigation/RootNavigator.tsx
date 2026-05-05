@@ -19,6 +19,7 @@ import { TelaMeuPerfil }          from '../screens/TelaMeuPerfil'
 import { TelaGaleria }            from '../screens/TelaGaleria'
 import { TelaAcessibilidade }    from '../screens/TelaAcessibilidade'
 import { TelaNotificacoesPush } from '../screens/TelaNotificacoesPush'
+import { TelaRelatorio }        from '../screens/TelaRelatorio'
 
 const Stack = createNativeStackNavigator()
 
@@ -47,6 +48,7 @@ export function RootNavigator() {
         <Stack.Screen name="Galeria"              component={TelaGaleria}             options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Acessibilidade"       component={TelaAcessibilidade}      options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="NotificacoesPush"     component={TelaNotificacoesPush}    options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="TelaRelatorio"        component={TelaRelatorio}           options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   )

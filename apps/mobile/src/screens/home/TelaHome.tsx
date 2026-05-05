@@ -28,6 +28,7 @@ const IconeMenuContato = ({ width = 26, color }: IProps) => <Ionicons name="mail
 const IconeMenuSair          = ({ width = 26, color }: IProps) => <Ionicons name="log-out-outline" size={width} color={color ?? '#fff'} />
 const IconeAcessibilidade    = ({ width = 26, color }: IProps) => <Ionicons name="eye-outline"          size={width} color={color ?? '#fff'} />
 const IconeNotificacao       = ({ width = 26, color }: IProps) => <Ionicons name="notifications-outline" size={width} color={color ?? '#fff'} />
+const IconeRelatorio         = ({ width = 26, color }: IProps) => <Ionicons name="bar-chart-outline"      size={width} color={color ?? '#fff'} />
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const DRAWER_WIDTH = 280
@@ -162,6 +163,7 @@ export function TelaHome({ navigation }: Props) {
     { label: 'Contato',        Icone: IconeMenuContato,    onPress: () => navegarDaDrawer('Contato'),        vermelho: false },
     { label: 'Acessibilidade', Icone: IconeAcessibilidade, onPress: () => navegarDaDrawer('Acessibilidade'),   vermelho: false },
     { label: 'Notificações',   Icone: IconeNotificacao,   onPress: () => navegarDaDrawer('NotificacoesPush'), vermelho: false },
+    { label: 'Relatório',      Icone: IconeRelatorio,     onPress: () => navegarDaDrawer('TelaRelatorio'),    vermelho: false },
     { label: 'Sair',           Icone: IconeMenuSair,       onPress: handleLogout,                            vermelho: true  },
   ]
 
@@ -321,6 +323,20 @@ export function TelaHome({ navigation }: Props) {
               />
             </View>
           )}
+
+          {/* Atalho Relatório de Despesas */}
+          <TouchableOpacity
+            style={estilos.cardRelatorio}
+            onPress={() => navigation.navigate('TelaRelatorio')}
+            activeOpacity={0.8}
+            accessible
+            accessibilityLabel="Ver Relatório de Despesas"
+            accessibilityRole="button"
+          >
+            <Ionicons name="bar-chart-outline" size={22} color={CORES.branco} />
+            <AppText style={estilos.cardRelatorioTexto}>Ver Relatório de Despesas</AppText>
+            <Ionicons name="chevron-forward" size={18} color={CORES.branco} style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
 
           {/* Banner inferior — decorativo, oculto do leitor de tela */}
           <View
@@ -690,6 +706,29 @@ const estilos = StyleSheet.create({
     color: CORES.branco,
     fontSize: 9,
     fontWeight: 'bold',
+  },
+
+  // Card Relatório
+  cardRelatorio: {
+    backgroundColor: CORES.primaria,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ESPACOS.sm,
+    marginHorizontal: ESPACOS.md,
+    marginTop: ESPACOS.sm,
+    marginBottom: ESPACOS.md,
+    borderRadius: 12,
+    padding: ESPACOS.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardRelatorioTexto: {
+    color: CORES.branco,
+    fontSize: FONTES.normal,
+    fontWeight: '700',
   },
 
   // Bottom Navigation

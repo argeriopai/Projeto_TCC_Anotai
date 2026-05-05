@@ -23,7 +23,8 @@ const IconeMenuCarro   = ({ width = 26, color }: IProps) => <Ionicons name="car-
 const IconeGaleria     = ({ width = 26, color }: IProps) => <Ionicons name="images-outline"  size={width} color={color ?? '#fff'} />
 const IconeMenuContato = ({ width = 26, color }: IProps) => <Ionicons name="mail-outline"    size={width} color={color ?? '#fff'} />
 const IconeMenuSair          = ({ width = 26, color }: IProps) => <Ionicons name="log-out-outline" size={width} color={color ?? '#fff'} />
-const IconeAcessibilidade    = ({ width = 26, color }: IProps) => <Ionicons name="eye-outline"     size={width} color={color ?? '#fff'} />
+const IconeAcessibilidade    = ({ width = 26, color }: IProps) => <Ionicons name="eye-outline"          size={width} color={color ?? '#fff'} />
+const IconeNotificacao       = ({ width = 26, color }: IProps) => <Ionicons name="notifications-outline" size={width} color={color ?? '#fff'} />
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const DRAWER_WIDTH = 280
@@ -138,7 +139,8 @@ export function TelaHome({ navigation }: Props) {
     { label: 'Veículo',    Icone: IconeMenuCarro,   onPress: () => navegarDaDrawer('Veiculos'),                                                                     vermelho: false },
     { label: 'Galeria',    Icone: IconeGaleria,     onPress: () => { fecharDrawer(); setTimeout(() => requireAuth(() => navigation.navigate('Galeria')), 300) },    vermelho: false },
     { label: 'Contato',        Icone: IconeMenuContato,    onPress: () => navegarDaDrawer('Contato'),        vermelho: false },
-    { label: 'Acessibilidade', Icone: IconeAcessibilidade, onPress: () => navegarDaDrawer('Acessibilidade'), vermelho: false },
+    { label: 'Acessibilidade', Icone: IconeAcessibilidade, onPress: () => navegarDaDrawer('Acessibilidade'),   vermelho: false },
+    { label: 'Notificações',   Icone: IconeNotificacao,   onPress: () => navegarDaDrawer('NotificacoesPush'), vermelho: false },
     { label: 'Sair',           Icone: IconeMenuSair,       onPress: handleLogout,                            vermelho: true  },
   ]
 

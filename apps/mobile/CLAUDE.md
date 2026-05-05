@@ -31,7 +31,16 @@ apps/mobile/
 - Acessibilidade: fonte grande global (AcessibilidadeContext + AppText) ✅
 - VLibras: removido (incompatível com mobile nativo, documentar como melhoria futura)
 
-## Próximo passo — Sprint 4
+## Sprint 4 — CONCLUÍDO
+- Notificações locais com expo-notifications ✅
+- src/services/notificacoes.ts: solicitarPermissao, agendarNotificacao, cancelarNotificacao, listarNotificacoesAgendadas ✅
+- App.tsx: setNotificationHandler + solicitarPermissao na inicialização ✅
+- TelaRegistrarNotificacao: agenda notificação local (08h) ao salvar nova revisão com data futura ✅
+- TelaNotificacoesPush: lista e cancela lembretes agendados individualmente ou todos ✅
+- RootNavigator: rota NotificacoesPush ✅
+- TelaHome drawer: item "Notificações" (ícone notifications-outline) ✅
+
+## Próximo passo — Sprint 5
 A definir.
 
 ## Convenções do projeto

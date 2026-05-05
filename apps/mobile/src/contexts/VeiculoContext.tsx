@@ -15,15 +15,21 @@ export interface VeiculoAtivo {
 interface VeiculoContextData {
   veiculoAtivo: VeiculoAtivo | null
   definirVeiculoAtivo: (v: VeiculoAtivo | null) => Promise<void>
+  veiculoAtivoId: string | null
+  ativarVeiculo: (id: string) => Promise<void>
 }
 
 const VeiculoContext = createContext<VeiculoContextData>({} as VeiculoContextData)
 
 export function VeiculoProvider({ children }: { children: React.ReactNode }) {
-  const [veiculoAtivo, setVeiculoAtivoState] = useState<VeiculoAtivo | null>(null)
+  const [veiculoAtivo,   setVeiculoAtivoState] = useState<VeiculoAtivo | null>(null)
+  const [veiculoAtivoId, setVeiculoAtivoId]    = useState<string | null>(null)
 
   useEffect(() => {
     async function carregarEValidar() {
+      const idSalvo = await AsyncStorage.getItem('@anotai:veiculoAtivo')
+      if (idSalvo) setVeiculoAtivoId(idSalvo)
+
       const raw = await AsyncStorage.getItem(STORAGE_KEY)
       if (!raw) return
 
@@ -46,6 +52,11 @@ export function VeiculoProvider({ children }: { children: React.ReactNode }) {
     carregarEValidar()
   }, [])
 
+  async function ativarVeiculo(id: string) {
+    setVeiculoAtivoId(id)
+    await AsyncStorage.setItem('@anotai:veiculoAtivo', id)
+  }
+
   async function definirVeiculoAtivo(v: VeiculoAtivo | null) {
     setVeiculoAtivoState(v)
     if (v) {
@@ -56,7 +67,7 @@ export function VeiculoProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <VeiculoContext.Provider value={{ veiculoAtivo, definirVeiculoAtivo }}>
+    <VeiculoContext.Provider value={{ veiculoAtivo, definirVeiculoAtivo, veiculoAtivoId, ativarVeiculo }}>
       {children}
     </VeiculoContext.Provider>
   )

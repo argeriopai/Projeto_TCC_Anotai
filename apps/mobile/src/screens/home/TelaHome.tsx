@@ -1,13 +1,16 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect, useCallback } from 'react'
 import {
   View, TouchableOpacity, StyleSheet, ScrollView,
-  Animated, Dimensions, TouchableWithoutFeedback, Alert,
+  Animated, Dimensions, TouchableWithoutFeedback, Alert, FlatList,
 } from 'react-native'
 import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { useFocusEffect } from '@react-navigation/native'
 import { useAuth } from '../../contexts/AuthContext'
+import { useVeiculo } from '../../contexts/VeiculoContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
+import { listarCarrosApi, listarMotosApi, Carro, Moto } from '../../services/api'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 
 // Logomarca
@@ -41,6 +44,7 @@ interface Props {
 }
 
 type Aba = 'inicio' | 'servicos' | 'pecas' | 'revisoes' | 'veiculo'
+type VeiculoCard = { id: string; tipo: 'carro' | 'moto'; marca: string; modelo: string; placa: string }
 type LibIcon = 'mci' | undefined
 type BotaoItem = { label: string; icone: string; lib?: LibIcon; onPress: () => void }
 type AbaNavItem = { key: string; label: string; icone: string; lib?: LibIcon; rota: string | null }
@@ -52,15 +56,14 @@ function NavIcon({ icone, lib, size, color }: { icone: string; lib?: LibIcon; si
 
 export function TelaHome({ navigation }: Props) {
   const { proprietario, estaLogado, logout } = useAuth()
+  const { veiculoAtivoId, ativarVeiculo } = useVeiculo()
   const { requireAuth } = useAuthGuard()
   const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? ''
-
-  // DEBUG TEMPORÁRIO — remover após confirmar que o banner some ao logar
-  console.log('[TelaHome] estaLogado:', estaLogado, '| proprietario:', proprietario?.email)
 
   const [abaAtiva, setAbaAtiva] = useState<Aba>('inicio')
   const [drawerAberto, setDrawerAberto] = useState(false)
   const [slideAtual, setSlideAtual] = useState(0)
+  const [veiculos, setVeiculos] = useState<VeiculoCard[]>([])
 
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current
   const overlayOpacity = useRef(new Animated.Value(0)).current
@@ -76,6 +79,24 @@ export function TelaHome({ navigation }: Props) {
     }, 3000)
     return () => clearInterval(interval)
   }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      async function carregarVeiculos() {
+        try {
+          const [resCarros, resMotos] = await Promise.all([listarCarrosApi(), listarMotosApi()])
+          const lista: VeiculoCard[] = [
+            ...resCarros.data.map((c: Carro) => ({ id: c.id, tipo: 'carro' as const, marca: c.marca, modelo: c.modelo, placa: c.placa })),
+            ...resMotos.data.map((m: Moto)  => ({ id: m.id, tipo: 'moto'  as const, marca: m.marca, modelo: m.modelo, placa: m.placa })),
+          ]
+          setVeiculos(lista)
+        } catch {
+          // sem veículos ou sem conexão
+        }
+      }
+      carregarVeiculos()
+    }, [])
+  )
 
   function abrirDrawer() {
     setDrawerAberto(true)
@@ -255,6 +276,51 @@ export function TelaHome({ navigation }: Props) {
               <Ionicons name="chevron-forward" size={18} color={CORES.cinzaTexto} style={{ marginLeft: 'auto' }} />
             </TouchableOpacity>
           ))}
+
+          {/* Seção Meus Veículos */}
+          {veiculos.length > 0 && (
+            <View style={estilos.secaoVeiculos}>
+              <AppText style={estilos.subtituloAcoes}>Selecione o veículo ativo</AppText>
+              <AppText style={estilos.subtituloVeiculoSub}>Os registros serão vinculados ao veículo selecionado</AppText>
+              <FlatList
+                horizontal
+                data={veiculos}
+                keyExtractor={item => item.id}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: ESPACOS.md, paddingVertical: ESPACOS.sm }}
+                renderItem={({ item }) => {
+                  const ativo = veiculoAtivoId === item.id
+                  return (
+                    <TouchableOpacity
+                      style={[estilos.cardVeiculo, ativo ? estilos.cardAtivo : estilos.cardInativo]}
+                      onPress={() => ativarVeiculo(item.id)}
+                      activeOpacity={0.75}
+                      accessible
+                      accessibilityLabel={`${item.marca} ${item.modelo} placa ${item.placa}${ativo ? ', ativo' : ''}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: ativo }}
+                    >
+                      {item.tipo === 'carro'
+                        ? <Ionicons name="car-outline" size={28} color={ativo ? CORES.secundaria : CORES.cinzaTexto} />
+                        : <MaterialCommunityIcons name="motorbike" size={28} color={ativo ? CORES.secundaria : CORES.cinzaTexto} />
+                      }
+                      <AppText style={[estilos.cardVeiculoPlaca, ativo && { color: CORES.secundaria }]} numberOfLines={1}>
+                        {item.placa}
+                      </AppText>
+                      <AppText style={estilos.cardVeiculoModelo} numberOfLines={1}>
+                        {item.modelo}
+                      </AppText>
+                      {ativo && (
+                        <View style={estilos.badgeAtivo}>
+                          <AppText style={estilos.badgeAtivoTexto}>ATIVO</AppText>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  )
+                }}
+              />
+            </View>
+          )}
 
           {/* Banner inferior — decorativo, oculto do leitor de tela */}
           <View
@@ -570,6 +636,60 @@ const estilos = StyleSheet.create({
     color: CORES.primaria,
     fontSize: FONTES.normal,
     fontWeight: '700',
+  },
+
+  // Seção Meus Veículos
+  secaoVeiculos: {
+    marginTop: ESPACOS.sm,
+  },
+  subtituloVeiculoSub: {
+    fontSize: FONTES.pequena,
+    color: CORES.cinzaTexto,
+    marginHorizontal: ESPACOS.md,
+    marginTop: 2,
+    marginBottom: ESPACOS.xs,
+  },
+  cardVeiculo: {
+    width: 130,
+    height: 100,
+    borderRadius: 14,
+    backgroundColor: CORES.branco,
+    padding: 12,
+    marginRight: 10,
+    borderWidth: 2,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    justifyContent: 'center',
+  },
+  cardAtivo:           { borderColor: '#2ECC71' },
+  cardInativo:         { borderColor: '#E0E0E0' },
+  cardVeiculoPlaca: {
+    fontSize: FONTES.normal,
+    fontWeight: '700',
+    color: CORES.pretinho,
+    marginTop: 4,
+  },
+  cardVeiculoModelo: {
+    fontSize: FONTES.pequena,
+    color: CORES.cinzaTexto,
+    marginTop: 2,
+  },
+  badgeAtivo: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: '#2ECC71',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  badgeAtivoTexto: {
+    color: CORES.branco,
+    fontSize: 9,
+    fontWeight: 'bold',
   },
 
   // Bottom Navigation

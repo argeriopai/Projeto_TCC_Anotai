@@ -7,6 +7,7 @@ import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { listarCarrosApi, listarMotosApi, registrarNotificacaoApi, editarNotificacaoApi, Carro, Moto, Notificacao } from '../../services/api'
+import { agendarNotificacao } from '../../services/notificacoes'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { useAuth } from '../../contexts/AuthContext'
 import { AvatarCircular } from '../../components/AvatarCircular'
@@ -127,7 +128,11 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
           ])
         } else {
           await registrarNotificacaoApi(payload)
-          Alert.alert('Sucesso!', 'Revisão registrada com sucesso.', [
+          const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data)
+          const msg = notifId
+            ? 'Revisão registrada! Você receberá uma notificação no dia agendado.'
+            : 'Revisão registrada com sucesso.'
+          Alert.alert('Sucesso!', msg, [
             { text: 'OK', onPress: () => navigation.goBack() },
           ])
         }

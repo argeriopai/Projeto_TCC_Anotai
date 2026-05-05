@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
 import { AuthProvider } from './src/contexts/AuthContext'
+import { AcessibilidadeProvider } from './src/contexts/AcessibilidadeContext'
 import { VeiculoProvider } from './src/contexts/VeiculoContext'
 import { RootNavigator } from './src/navigation/RootNavigator'
 
@@ -15,10 +16,12 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <VeiculoProvider>
-        <StatusBar style="light" />
-        <RootNavigator />
-      </VeiculoProvider>
+      <AcessibilidadeProvider>
+        <VeiculoProvider>
+          <StatusBar style="light" />
+          <RootNavigator />
+        </VeiculoProvider>
+      </AcessibilidadeProvider>
     </AuthProvider>
   )
 }

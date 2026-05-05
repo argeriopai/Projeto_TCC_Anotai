@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react'
 import {
-  View, Text, TouchableOpacity, StyleSheet,
+  View, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
@@ -13,8 +14,8 @@ import { listarServicosApi, excluirServicoApi, Servico } from '../../services/ap
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { BottomNavBar } from '../../components/BottomNavBar'
 import { FotosViewerModal } from '../../components/FotosViewerModal'
+import { AvatarCircular } from '../../components/AvatarCircular'
 import { listarTodasFotos, FotoRegistro, temFotos } from '../../utils/fotosStorage'
-import IconeNavServicos from '../../assets/icons/ICONE_RELATORIO_SERVIÇOS.svg'
 
 interface Props { navigation: any }
 
@@ -111,30 +112,48 @@ export function TelaServicos({ navigation }: Props) {
       {/* HEADER */}
       <View style={estilos.header}>
         <View style={estilos.headerEsquerda}>
-          <Ionicons name="person-circle-outline" size={34} color={CORES.branco} />
+          <AvatarCircular uri={proprietario?.fotoPerfil} size={34} />
           <View style={{ marginLeft: ESPACOS.xs }}>
-            <Text style={estilos.headerOla}>Olá,</Text>
-            <Text style={estilos.headerNome}>{apelido}</Text>
+            <AppText style={estilos.headerOla}>Olá,</AppText>
+            <AppText style={estilos.headerNome}>{apelido}</AppText>
           </View>
         </View>
         <View style={estilos.headerAcoes}>
-          <TouchableOpacity style={estilos.btnAcao} onPress={handleEditar}>
+          <TouchableOpacity
+            style={estilos.btnAcao}
+            onPress={handleEditar}
+            accessible={true}
+            accessibilityLabel="Editar registro selecionado"
+            accessibilityRole="button"
+          >
             <View style={[estilos.btnCirculo, { backgroundColor: CORES.secundaria }]}>
               <Ionicons name="pencil" size={15} color={CORES.branco} />
             </View>
-            <Text style={estilos.btnLabel}>Editar</Text>
+            <AppText style={estilos.btnLabel}>Editar</AppText>
           </TouchableOpacity>
-          <TouchableOpacity style={estilos.btnAcao} onPress={handleNovo}>
+          <TouchableOpacity
+            style={estilos.btnAcao}
+            onPress={handleNovo}
+            accessible={true}
+            accessibilityLabel="Adicionar novo registro"
+            accessibilityRole="button"
+          >
             <View style={[estilos.btnCirculo, { backgroundColor: CORES.secundaria }]}>
               <Ionicons name="add" size={20} color={CORES.branco} />
             </View>
-            <Text style={estilos.btnLabel}>Novo</Text>
+            <AppText style={estilos.btnLabel}>Novo</AppText>
           </TouchableOpacity>
-          <TouchableOpacity style={estilos.btnAcao} onPress={handleExcluir}>
+          <TouchableOpacity
+            style={estilos.btnAcao}
+            onPress={handleExcluir}
+            accessible={true}
+            accessibilityLabel="Excluir registro selecionado"
+            accessibilityRole="button"
+          >
             <View style={[estilos.btnCirculo, { backgroundColor: CORES.erro }]}>
               <Ionicons name="trash-outline" size={15} color={CORES.branco} />
             </View>
-            <Text style={estilos.btnLabel}>Excluir</Text>
+            <AppText style={estilos.btnLabel}>Excluir</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -142,11 +161,11 @@ export function TelaServicos({ navigation }: Props) {
       {/* TÍTULO */}
       <View style={estilos.tituloRow}>
         <View style={estilos.tituloEsquerda}>
-          <IconeNavServicos width={22} height={22} color={CORES.secundaria} />
-          <Text style={estilos.tituloTexto}>Serviços</Text>
+          <Ionicons name="construct-outline" size={24} color={CORES.secundaria} />
+          <AppText style={estilos.tituloTexto}>Serviços</AppText>
         </View>
         {veiculoLabel && (
-          <Text style={estilos.veiculoLabel} numberOfLines={1}>{veiculoLabel}</Text>
+          <AppText style={estilos.veiculoLabel} numberOfLines={1}>{veiculoLabel}</AppText>
         )}
       </View>
       <View style={estilos.divisoria} />
@@ -155,12 +174,12 @@ export function TelaServicos({ navigation }: Props) {
       {!veiculoAtivo ? (
         <View style={estilos.centralizador}>
           <Ionicons name="car-outline" size={56} color={CORES.cinzaTexto} />
-          <Text style={estilos.semDadosTitulo}>Nenhum veículo selecionado</Text>
-          <Text style={estilos.semDadosSub}>
+          <AppText style={estilos.semDadosTitulo}>Nenhum veículo selecionado</AppText>
+          <AppText style={estilos.semDadosSub}>
             Acesse Veículo e selecione um veículo para visualizar seus registros
-          </Text>
+          </AppText>
           <TouchableOpacity style={estilos.btnAdicionar} onPress={() => navigation.navigate('Veiculos')}>
-            <Text style={estilos.btnAdicionarTexto}>Selecionar Veículo</Text>
+            <AppText style={estilos.btnAdicionarTexto}>Selecionar Veículo</AppText>
           </TouchableOpacity>
         </View>
       ) : carregando ? (
@@ -170,9 +189,9 @@ export function TelaServicos({ navigation }: Props) {
       ) : lista.length === 0 ? (
         <View style={estilos.centralizador}>
           <Ionicons name="construct-outline" size={52} color={CORES.cinzaTexto} />
-          <Text style={estilos.semDados}>Nenhum serviço encontrado</Text>
+          <AppText style={estilos.semDados}>Nenhum serviço encontrado</AppText>
           <TouchableOpacity style={estilos.btnAdicionar} onPress={handleNovo}>
-            <Text style={estilos.btnAdicionarTexto}>Adicionar</Text>
+            <AppText style={estilos.btnAdicionarTexto}>Adicionar</AppText>
           </TouchableOpacity>
         </View>
       ) : (
@@ -187,18 +206,22 @@ export function TelaServicos({ navigation }: Props) {
               style={[estilos.card, cardSelecionado === item.id && estilos.cardAtivo]}
               onPress={() => setCardSelecionado(p => p === item.id ? null : item.id)}
               activeOpacity={0.85}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Serviço ${item.tipo}, ${item.data}${item.custo !== undefined ? `, R$ ${item.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}`}
+              accessibilityHint="Toque para selecionar o registro"
             >
               {/* Data + Oficina */}
               <View style={estilos.cardTopRow}>
-                <Text style={estilos.cardData}>{item.data}</Text>
+                <AppText style={estilos.cardData}>{item.data}</AppText>
                 <View style={{ alignItems: 'flex-end', flex: 1, marginLeft: ESPACOS.sm }}>
                   {item.estabelecimento && (
-                    <Text style={estilos.cardEstabelecimento} numberOfLines={1}>
+                    <AppText style={estilos.cardEstabelecimento} numberOfLines={1}>
                       {item.estabelecimento}
-                    </Text>
+                    </AppText>
                   )}
                   {item.telefoneEstabelecimento && (
-                    <Text style={estilos.cardTelefone}>{item.telefoneEstabelecimento}</Text>
+                    <AppText style={estilos.cardTelefone}>{item.telefoneEstabelecimento}</AppText>
                   )}
                 </View>
               </View>
@@ -209,10 +232,10 @@ export function TelaServicos({ navigation }: Props) {
                   <View style={{ flex: 1 }} />
                   <View style={{ alignItems: 'flex-end' }}>
                     {item.profissional && (
-                      <Text style={estilos.cardProfissional}>{item.profissional}</Text>
+                      <AppText style={estilos.cardProfissional}>{item.profissional}</AppText>
                     )}
                     {item.telefoneProfissional && (
-                      <Text style={estilos.cardTelefone}>{item.telefoneProfissional}</Text>
+                      <AppText style={estilos.cardTelefone}>{item.telefoneProfissional}</AppText>
                     )}
                   </View>
                 </View>
@@ -221,46 +244,40 @@ export function TelaServicos({ navigation }: Props) {
               <View style={estilos.cardDivisor} />
 
               {/* Tipo + Descrição */}
-              <Text style={estilos.cardTipo}>{item.tipo}</Text>
+              <AppText style={estilos.cardTipo}>{item.tipo}</AppText>
               {item.descricao && (
-                <Text style={estilos.cardDescricao}>{item.descricao}</Text>
+                <AppText style={estilos.cardDescricao}>{item.descricao}</AppText>
               )}
 
               {/* Garantia + Km */}
               {(item.garantia || item.kilometragem) && (
                 <View style={estilos.cardMetaRow}>
-                  <Text style={estilos.cardMeta}>
+                  <AppText style={estilos.cardMeta}>
                     {item.garantia ? `Garantia: ${item.garantia}` : ''}
-                  </Text>
-                  <Text style={estilos.cardMeta}>
+                  </AppText>
+                  <AppText style={estilos.cardMeta}>
                     {item.kilometragem ? `Km: ${item.kilometragem}` : ''}
-                  </Text>
+                  </AppText>
                 </View>
               )}
 
               {/* Valor */}
               {item.custo !== undefined && (
-                <Text style={estilos.cardValor}>
+                <AppText style={estilos.cardValor}>
                   R$ {item.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </Text>
+                </AppText>
               )}
 
-              {/* Botão fotos */}
-              {(() => {
-                const reg = fotosMap.get(item.id)
-                const possuiFotos = reg && temFotos(reg)
-                return (
-                  <TouchableOpacity
-                    style={[estilos.btnFotos, !possuiFotos && estilos.btnFotosSemFotos]}
-                    onPress={() => { setViewerId(item.id); setViewerVeiculoId(item.veiculoId) }}
-                  >
-                    <Ionicons name="camera-outline" size={13} color={possuiFotos ? CORES.branco : CORES.secundaria} />
-                    <Text style={[estilos.btnFotosTexto, !possuiFotos && estilos.btnFotosTextoSemFotos]}>
-                      {possuiFotos ? 'Ver Fotos' : 'Adicionar Fotos'}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              })()}
+              {/* Botão fotos — só exibido quando há fotos */}
+              {fotosMap.get(item.id) && temFotos(fotosMap.get(item.id)!) && (
+                <TouchableOpacity
+                  style={estilos.btnFotos}
+                  onPress={() => { setViewerId(item.id); setViewerVeiculoId(item.veiculoId) }}
+                >
+                  <Ionicons name="camera-outline" size={13} color={CORES.branco} />
+                  <AppText style={estilos.btnFotosTexto}>Ver Fotos</AppText>
+                </TouchableOpacity>
+              )}
 
               <Ionicons name="chevron-forward" size={14} color={CORES.cinzaTexto} style={estilos.cardChevron} />
             </TouchableOpacity>
@@ -320,8 +337,8 @@ const estilos = StyleSheet.create({
   // Estado vazio / carregando
   centralizador:     { flex: 1, backgroundColor: CORES.cinzaClaro, justifyContent: 'center', alignItems: 'center', gap: ESPACOS.md, paddingHorizontal: ESPACOS.xl },
   semDadosTitulo:    { fontSize: FONTES.media, color: CORES.pretinho, fontWeight: '700', textAlign: 'center' },
-  semDadosSub:       { fontSize: FONTES.pequena, color: CORES.cinzaTexto, textAlign: 'center', lineHeight: 18 },
-  semDados:          { fontSize: FONTES.normal, color: CORES.cinzaTexto, fontWeight: '500' },
+  semDadosSub:       { fontSize: FONTES.pequena, color: CORES.textoSecundario, textAlign: 'center', lineHeight: 18 },
+  semDados:          { fontSize: FONTES.normal, color: CORES.textoSecundario, fontWeight: '500' },
   btnAdicionar:      { backgroundColor: CORES.secundaria, borderRadius: 20, paddingHorizontal: ESPACOS.lg, paddingVertical: ESPACOS.sm },
   btnAdicionarTexto: { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
 
@@ -345,13 +362,13 @@ const estilos = StyleSheet.create({
   },
   cardAtivo:        { borderColor: CORES.secundaria, shadowOpacity: 0.15 },
   cardTopRow:       { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  cardData:         { fontSize: FONTES.pequena, color: CORES.cinzaTexto, fontWeight: '600' },
+  cardData:         { fontSize: FONTES.pequena, color: CORES.textoSecundario, fontWeight: '600' },
   cardEstabelecimento: { fontSize: FONTES.pequena, color: CORES.pretinho, fontWeight: '600' },
   cardProfissional: { fontSize: FONTES.pequena, color: CORES.texto },
-  cardTelefone:     { fontSize: 11, color: CORES.cinzaTexto },
+  cardTelefone:     { fontSize: 11, color: CORES.textoSecundario },
   cardDivisor:      { height: 1, backgroundColor: CORES.borda, marginVertical: ESPACOS.sm },
   cardTipo:         { fontSize: FONTES.normal, fontWeight: '700', color: CORES.pretinho, marginBottom: 2 },
-  cardDescricao:    { fontSize: FONTES.pequena, color: CORES.cinzaTexto, marginBottom: ESPACOS.xs },
+  cardDescricao:    { fontSize: FONTES.pequena, color: CORES.textoSecundario, marginBottom: ESPACOS.xs },
   cardMetaRow:      { flexDirection: 'row', justifyContent: 'space-between', marginTop: ESPACOS.xs },
   cardMeta:         { fontSize: FONTES.pequena, color: CORES.texto },
   cardValor:        { fontSize: FONTES.media, fontWeight: '700', color: CORES.secundariaEscuro, textAlign: 'right', marginTop: ESPACOS.xs },
@@ -367,18 +384,9 @@ const estilos = StyleSheet.create({
     paddingVertical: 4,
     marginTop: ESPACOS.sm,
   },
-  btnFotosSemFotos: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: CORES.secundaria,
-    borderStyle: 'dashed',
-  },
   btnFotosTexto: {
     color: CORES.branco,
     fontSize: FONTES.pequena,
     fontWeight: '600',
-  },
-  btnFotosTextoSemFotos: {
-    color: CORES.secundaria,
   },
 })

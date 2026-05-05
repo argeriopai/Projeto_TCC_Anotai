@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { listarCarrosApi, listarMotosApi, registrarPecaApi, atualizarPecaApi, Carro, Moto, Peca } from '../../services/api'
@@ -12,7 +13,9 @@ import { CampoData, formatarData } from '../../components/CampoData'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { mascaraMoeda, mascaraTelefone, parseMoeda } from '../../utils/mascaras'
 import { useVeiculo } from '../../contexts/VeiculoContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
+import { AvatarCircular } from '../../components/AvatarCircular'
 import { FotosPicker, FotoSections, FOTOS_VAZIAS } from '../../components/FotosPicker'
 import { buscarFotos, salvarFotos, temFotos } from '../../utils/fotosStorage'
 
@@ -28,9 +31,18 @@ function parseDateStr(dateStr: string): Date {
 
 export function TelaRegistrarPeca({ navigation, route }: Props) {
   const edit: Peca | undefined = route.params?.registroParaEditar
+  const { proprietario } = useAuth()
   const { veiculoAtivo } = useVeiculo()
   const { requireAuth, estaLogado } = useAuthGuard()
+  const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
   const [fotos, setFotos] = useState<FotoSections>(FOTOS_VAZIAS)
+
+  const nomeRef           = useRef<TextInput>(null)
+  const descricaoRef      = useRef<TextInput>(null)
+  const estabelecimentoRef = useRef<TextInput>(null)
+  const telEstabRef       = useRef<TextInput>(null)
+  const quantidadeRef     = useRef<TextInput>(null)
+  const valorUnitRef      = useRef<TextInput>(null)
 
   // ── Campos do formulário ──────────────────────────────────────────────────
   const [nome,                    setNome]                    = useState(edit?.nome ?? '')
@@ -153,14 +165,14 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
       try {
         if (edit) {
           await atualizarPecaApi(edit.id, payload)
-          const rec = { veiculoId: veiculoId!, registroId: edit.id, tipoRegistro: 'peca' as const, ...fotos }
+          const rec = { veiculoId: veiculoId!, registroId: edit.id, tipoRegistro: 'peca' as const, nomeRegistro: nome.trim(), ...fotos }
           if (temFotos(rec)) await salvarFotos(rec)
           Alert.alert('Sucesso!', 'Peça atualizada com sucesso.', [
             { text: 'OK', onPress: () => navigation.goBack() },
           ])
         } else {
           const res = await registrarPecaApi(payload)
-          const rec = { veiculoId: veiculoId!, registroId: res.data.id, tipoRegistro: 'peca' as const, ...fotos }
+          const rec = { veiculoId: veiculoId!, registroId: res.data.id, tipoRegistro: 'peca' as const, nomeRegistro: nome.trim(), ...fotos }
           if (temFotos(rec)) await salvarFotos(rec)
           Alert.alert('Sucesso!', 'Peça registrada com sucesso.', [
             { text: 'OK', onPress: () => navigation.goBack() },
@@ -177,24 +189,42 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
   return (
     <SafeAreaView style={estilos.safe} edges={['top']}>
       <View style={estilos.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityLabel="Voltar"
+          accessibilityRole="button"
+        >
           <Ionicons name="arrow-back" size={24} color={CORES.branco} />
         </TouchableOpacity>
-        <Text style={estilos.headerTitulo}>{edit ? 'Editar Peça' : 'Registrar Peça'}</Text>
-        <View style={{ width: 24 }} />
+        <View style={estilos.headerDireita}>
+          <AvatarCircular uri={proprietario?.fotoPerfil} size={34} />
+          <View style={{ marginLeft: ESPACOS.xs }}>
+            <AppText style={estilos.headerOla}>Olá,</AppText>
+            <AppText style={estilos.headerNome}>{apelido}</AppText>
+          </View>
+        </View>
       </View>
+
+      {/* TÍTULO */}
+      <View style={estilos.tituloRow}>
+        <Ionicons name="cog-outline" size={24} color={CORES.secundaria} />
+        <AppText style={estilos.tituloTexto}>{edit ? 'Editar Peça' : 'Registrar Peça'}</AppText>
+      </View>
+      <View style={estilos.divisoria} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={estilos.scroll} contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
 
           {/* ── Seletor de veículo ─────────────────────────────────────── */}
-          <Text style={estilos.label}>Veículo <Text style={estilos.obrig}>*</Text></Text>
+          <AppText style={estilos.label}>Veículo <AppText style={estilos.obrig}>*</AppText></AppText>
           {carregandoVeiculos ? (
             <ActivityIndicator color={CORES.secundaria} style={{ marginVertical: ESPACOS.md }} />
           ) : veiculos.length === 0 ? (
             <TouchableOpacity style={estilos.avisoVeiculo} onPress={() => navigation.navigate('RegistrarCarro')}>
               <Ionicons name="alert-circle-outline" size={18} color={CORES.atencao} />
-              <Text style={estilos.avisoTexto}>Nenhum veículo cadastrado. Toque para cadastrar.</Text>
+              <AppText style={estilos.avisoTexto}>Nenhum veículo cadastrado. Toque para cadastrar.</AppText>
             </TouchableOpacity>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.chipScroll}>
@@ -203,86 +233,101 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
                   key={v.id}
                   style={[estilos.chip, veiculoId === v.id && estilos.chipAtivo]}
                   onPress={() => { setVeiculoId(v.id); limparErro('veiculo') }}
+                  accessible={true}
+                  accessibilityLabel={`Selecionar veículo ${v.label}`}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: veiculoId === v.id }}
                 >
-                  <Text style={[estilos.chipTexto, veiculoId === v.id && estilos.chipTextoAtivo]} numberOfLines={1}>
+                  <AppText style={[estilos.chipTexto, veiculoId === v.id && estilos.chipTextoAtivo]} numberOfLines={1}>
                     {v.label}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           )}
-          {!!erros.veiculo && <Text style={estilos.textoErro}>{erros.veiculo}</Text>}
+          {!!erros.veiculo && <AppText style={estilos.textoErro}>{erros.veiculo}</AppText>}
 
           <View style={{ height: ESPACOS.md }} />
 
           {/* ── Nome da peça com microfone ─────────────────────────────── */}
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Nome da peça <Text style={estilos.obrig}>*</Text></Text>
+            <AppText style={estilos.label}>Nome da peça <AppText style={estilos.obrig}>*</AppText></AppText>
             <View style={[estilos.inputRow, erros.nome ? estilos.inputErro : null]}>
               <TextInput
+                ref={nomeRef}
                 style={estilos.inputFlex}
                 value={nome}
                 onChangeText={t => { setNome(t); limparErro('nome') }}
                 placeholder="Ex: Filtro de ar"
-                placeholderTextColor={CORES.cinzaTexto}
+                placeholderTextColor={CORES.placeholder}
                 autoCapitalize="sentences"
                 autoCorrect={false}
+                returnKeyType="next"
                 blurOnSubmit={false}
+                onSubmitEditing={() => descricaoRef.current?.focus()}
               />
               <BotaoMic gravando={isRecording && campoVoz === 'nome'} onPress={() => toggleMic('nome')} />
             </View>
             {isRecording && campoVoz === 'nome' && <IndicadorGravando />}
-            {!!erros.nome && <Text style={estilos.textoErro}>{erros.nome}</Text>}
+            {!!erros.nome && <AppText style={estilos.textoErro}>{erros.nome}</AppText>}
           </View>
 
           {/* ── Descrição com microfone ────────────────────────────────── */}
           <View style={estilos.campo}>
             <View style={estilos.labelRow}>
-              <Text style={estilos.label}>Descrição</Text>
+              <AppText style={estilos.label}>Descrição</AppText>
               <BotaoMic gravando={isRecording && campoVoz === 'descricao'} onPress={() => toggleMic('descricao')} />
             </View>
             {isRecording && campoVoz === 'descricao' && <IndicadorGravando />}
             <TextInput
+              ref={descricaoRef}
               style={estilos.inputMultiline}
               value={descricao}
               onChangeText={setDescricao}
               placeholder="Detalhes adicionais..."
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               multiline
               autoCapitalize="sentences"
+              returnKeyType="next"
               blurOnSubmit={false}
             />
           </View>
 
           {/* ── Estabelecimento ────────────────────────────────────────── */}
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Estabelecimento</Text>
+            <AppText style={estilos.label}>Estabelecimento</AppText>
             <TextInput
+              ref={estabelecimentoRef}
               style={estilos.input}
               value={estabelecimento}
               onChangeText={setEstabelecimento}
               placeholder="Ex: Auto Peças Central"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
+              returnKeyType="next"
               blurOnSubmit={false}
+              onSubmitEditing={() => telEstabRef.current?.focus()}
             />
           </View>
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Telefone do estabelecimento</Text>
+            <AppText style={estilos.label}>Telefone do estabelecimento</AppText>
             <TextInput
+              ref={telEstabRef}
               style={[estilos.input, erros.telefoneEstabelecimento ? estilos.inputErro : telEstabValido ? estilos.inputValido : null]}
               value={telefoneEstabelecimento}
               onChangeText={t => { setTelefoneEstabelecimento(mascaraTelefone(t)); limparErro('telefoneEstabelecimento'); setTelEstabValido(false) }}
               placeholder="(00) 00000-0000"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               keyboardType="phone-pad"
               onBlur={handleTelEstabBlur}
               onFocus={() => limparErro('telefoneEstabelecimento')}
+              returnKeyType="next"
               blurOnSubmit={false}
+              onSubmitEditing={() => quantidadeRef.current?.focus()}
             />
-            {!!erros.telefoneEstabelecimento && <Text style={estilos.textoErro}>{erros.telefoneEstabelecimento}</Text>}
+            {!!erros.telefoneEstabelecimento && <AppText style={estilos.textoErro}>{erros.telefoneEstabelecimento}</AppText>}
           </View>
 
           {/* ── Data ──────────────────────────────────────────────────── */}
@@ -291,39 +336,44 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
           {/* ── Quantidade e Valor unitário ────────────────────────────── */}
           <View style={estilos.linha}>
             <View style={[estilos.campo, { flex: 1, marginRight: ESPACOS.sm }]}>
-              <Text style={estilos.label}>Quantidade</Text>
+              <AppText style={estilos.label}>Quantidade</AppText>
               <TextInput
+                ref={quantidadeRef}
                 style={estilos.input}
                 value={quantidade}
                 onChangeText={setQuantidade}
                 placeholder="Ex: 2"
-                placeholderTextColor={CORES.cinzaTexto}
+                placeholderTextColor={CORES.placeholder}
                 keyboardType="decimal-pad"
+                returnKeyType="next"
                 blurOnSubmit={false}
+                onSubmitEditing={() => valorUnitRef.current?.focus()}
               />
             </View>
             <View style={[estilos.campo, { flex: 1 }]}>
-              <Text style={estilos.label}>Valor unit. (R$)</Text>
+              <AppText style={estilos.label}>Valor unit. (R$)</AppText>
               <TextInput
+                ref={valorUnitRef}
                 style={estilos.input}
                 value={valorUnitario}
                 onChangeText={t => setValorUnitario(mascaraMoeda(t))}
                 placeholder="R$ 0,00"
-                placeholderTextColor={CORES.cinzaTexto}
+                placeholderTextColor={CORES.placeholder}
                 keyboardType="numeric"
-                blurOnSubmit={false}
+                returnKeyType="done"
+                blurOnSubmit={true}
               />
             </View>
           </View>
 
           {/* ── Valor total (somente leitura) ──────────────────────────── */}
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Valor total (R$)</Text>
+            <AppText style={estilos.label}>Valor total (R$)</AppText>
             <View style={estilos.inputLeitura}>
-              <Text style={estilos.inputLeituraTexto}>{valorTotalDisplay}</Text>
+              <AppText style={estilos.inputLeituraTexto}>{valorTotalDisplay}</AppText>
               <Ionicons name="calculator-outline" size={18} color={CORES.cinzaTexto} />
             </View>
-            <Text style={estilos.hintLeitura}>Calculado automaticamente: Quantidade × Valor unit.</Text>
+            <AppText style={estilos.hintLeitura}>Calculado automaticamente: Quantidade × Valor unit.</AppText>
           </View>
 
           {/* ── Fotos ─────────────────────────────────────────────────── */}
@@ -342,7 +392,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
           >
             {carregando
               ? <ActivityIndicator color={CORES.branco} />
-              : <Text style={estilos.textoBotao}>{edit ? 'Salvar Alterações' : 'Salvar'}</Text>
+              : <AppText style={estilos.textoBotao}>{edit ? 'Salvar Alterações' : 'Salvar'}</AppText>
             }
           </TouchableOpacity>
         </ScrollView>
@@ -362,6 +412,20 @@ const estilos = StyleSheet.create({
     paddingVertical: ESPACOS.md,
   },
   headerTitulo:  { color: CORES.branco, fontSize: FONTES.media, fontWeight: '700' },
+  headerCentro:  { flexDirection: 'row', alignItems: 'center' },
+  headerDireita: { flexDirection: 'row', alignItems: 'center' },
+  headerOla:     { color: CORES.cinzaTexto, fontSize: FONTES.pequena },
+  headerNome:    { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
+  tituloRow: {
+    backgroundColor: CORES.branco,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ESPACOS.xs,
+    paddingHorizontal: ESPACOS.md,
+    paddingVertical: ESPACOS.sm,
+  },
+  tituloTexto: { fontSize: FONTES.subtitulo, fontWeight: '700', color: CORES.pretinho },
+  divisoria:   { height: 2, backgroundColor: CORES.secundaria },
   scroll:        { flex: 1, backgroundColor: CORES.cinzaClaro },
   conteudo:      { padding: ESPACOS.lg, paddingBottom: ESPACOS.xxl },
   campo:         { marginBottom: ESPACOS.md },
@@ -417,7 +481,7 @@ const estilos = StyleSheet.create({
     height: 50,
   },
   inputLeituraTexto: { fontSize: FONTES.media, color: CORES.texto, fontWeight: '700' },
-  hintLeitura:       { fontSize: 11, color: CORES.cinzaTexto, marginTop: ESPACOS.xs },
+  hintLeitura:       { fontSize: 11, color: CORES.textoSecundario, marginTop: ESPACOS.xs },
   chipScroll:    { marginBottom: ESPACOS.xs },
   chip: {
     borderWidth: 1.5,

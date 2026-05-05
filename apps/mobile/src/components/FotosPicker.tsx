@@ -6,7 +6,6 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
-import { copiarFotoLocal } from '../utils/fotosStorage'
 import { FotosModal } from './FotosModal'
 
 export interface FotoSections {
@@ -53,6 +52,11 @@ export function FotosPicker({ fotos, onFotosChange, desabilitado, onBloqueado }:
   }
 
   async function selecionarFoto(secao: SecaoKey, origem: 'camera' | 'galeria') {
+    if (fotos[secao].length >= MAX) {
+      Alert.alert('Limite atingido', `Máximo de ${MAX} fotos por categoria.`, [{ text: 'OK' }])
+      return
+    }
+
     const ok = await pedirPermissao(origem)
     if (!ok) {
       Alert.alert(
@@ -64,12 +68,12 @@ export function FotosPicker({ fotos, onFotosChange, desabilitado, onBloqueado }:
     }
 
     const res = origem === 'camera'
-      ? await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: true, aspect: [4, 3] })
+      ? await ImagePicker.launchCameraAsync({ quality: 0.5, allowsEditing: true, aspect: [4, 3] })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, allowsEditing: true, aspect: [4, 3] })
 
     if (res.canceled || !res.assets?.[0]?.uri) return
 
-    const uri = await copiarFotoLocal(res.assets[0].uri)
+    const uri = res.assets[0].uri
     onFotosChange({ ...fotos, [secao]: [...fotos[secao], uri] })
   }
 
@@ -221,7 +225,7 @@ const es = StyleSheet.create({
   },
   contador: {
     fontSize: FONTES.pequena,
-    color: CORES.cinzaTexto,
+    color: CORES.textoSecundario,
   },
   fotosScroll: {
     gap: ESPACOS.sm,

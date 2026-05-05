@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Alert, Linking,
 } from 'react-native'
+import { AppText } from '../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../contexts/AuthContext'
+import { AvatarCircular } from '../components/AvatarCircular'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 
 interface Props { navigation: any }
@@ -33,16 +35,19 @@ export function TelaContato({ navigation }: Props) {
       {/* HEADER */}
       <View style={estilos.header}>
         <View style={estilos.headerEsquerda}>
-          <Ionicons name="person-circle-outline" size={34} color={CORES.branco} />
+          <AvatarCircular uri={proprietario?.fotoPerfil} size={34} />
           <View style={{ marginLeft: ESPACOS.xs }}>
-            <Text style={estilos.headerOla}>Olá,</Text>
-            <Text style={estilos.headerNome}>{apelido}</Text>
+            <AppText style={estilos.headerOla}>Olá,</AppText>
+            <AppText style={estilos.headerNome}>{apelido}</AppText>
           </View>
         </View>
         <TouchableOpacity
           style={estilos.headerHomeBtn}
           onPress={() => navigation.navigate('Home')}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessible={true}
+          accessibilityLabel="Ir para Início"
+          accessibilityRole="button"
         >
           <Ionicons name="home" size={20} color={CORES.branco} />
         </TouchableOpacity>
@@ -57,24 +62,33 @@ export function TelaContato({ navigation }: Props) {
         >
           {/* CARD PRINCIPAL */}
           <View style={estilos.card}>
-            <Text style={estilos.cardTitulo}>Que bom ter você aqui!</Text>
+            <AppText style={estilos.cardTitulo}>Que bom ter você aqui!</AppText>
 
-            <Text style={estilos.cardLabel}>Como Posso Ajudar?</Text>
+            <AppText style={estilos.cardLabel}>Como Posso Ajudar?</AppText>
 
             <TextInput
               style={estilos.input}
               value={mensagem}
               onChangeText={setMensagem}
               placeholder="Deixe aqui sua mensagem, reclamação ou sugestão"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
+              accessibilityLabel="Campo de mensagem"
+              accessibilityHint="Digite sua mensagem, reclamação ou sugestão"
               multiline
               textAlignVertical="top"
               autoCapitalize="sentences"
               blurOnSubmit={false}
             />
 
-            <TouchableOpacity style={estilos.btnEnviar} onPress={handleEnviar} activeOpacity={0.8}>
-              <Text style={estilos.btnEnviarTexto}>Enviar</Text>
+            <TouchableOpacity
+              style={estilos.btnEnviar}
+              onPress={handleEnviar}
+              activeOpacity={0.8}
+              accessible={true}
+              accessibilityLabel="Enviar mensagem"
+              accessibilityRole="button"
+            >
+              <AppText style={estilos.btnEnviarTexto}>Enviar</AppText>
             </TouchableOpacity>
           </View>
 
@@ -83,17 +97,23 @@ export function TelaContato({ navigation }: Props) {
             <TouchableOpacity
               style={estilos.rodapeItem}
               onPress={() => Linking.openURL('mailto:anotai@gmail.com')}
+              accessible={true}
+              accessibilityLabel="Enviar e-mail para anotai@gmail.com"
+              accessibilityRole="link"
             >
               <Ionicons name="mail-outline" size={20} color={CORES.secundaria} />
-              <Text style={estilos.rodapeTexto}>anotai@gmail.com</Text>
+              <AppText style={estilos.rodapeTexto}>anotai@gmail.com</AppText>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={estilos.rodapeItem}
               onPress={() => Linking.openURL('https://instagram.com/anotai')}
+              accessible={true}
+              accessibilityLabel="Acessar perfil do Instagram @anotai"
+              accessibilityRole="link"
             >
               <Ionicons name="logo-instagram" size={20} color={CORES.secundaria} />
-              <Text style={estilos.rodapeTexto}>@anotai</Text>
+              <AppText style={estilos.rodapeTexto}>@anotai</AppText>
             </TouchableOpacity>
           </View>
         </ScrollView>

@@ -7,6 +7,7 @@ export interface FotoRegistro {
   veiculoId: string
   registroId: string
   tipoRegistro: 'servico' | 'peca'
+  nomeRegistro?: string
   fotosServico: string[]
   fotosNotaFiscal: string[]
   fotosGarantia: string[]
@@ -55,16 +56,12 @@ export async function listarTodasFotos(): Promise<FotoRegistro[]> {
 }
 
 export async function copiarFotoLocal(uri: string): Promise<string> {
-  try {
-    const dir = `${FileSystem.documentDirectory}anotai/fotos/`
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true })
-    const nome = `foto_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
-    const dest = dir + nome
-    await FileSystem.copyAsync({ from: uri, to: dest })
-    return dest
-  } catch {
-    return uri
-  }
+  const dir = `${FileSystem.documentDirectory}anotai/fotos/`
+  await FileSystem.makeDirectoryAsync(dir, { intermediates: true })
+  const nome = `foto_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
+  const dest = dir + nome
+  await FileSystem.copyAsync({ from: uri, to: dest })
+  return dest
 }
 
 export function temFotos(registro: FotoRegistro): boolean {

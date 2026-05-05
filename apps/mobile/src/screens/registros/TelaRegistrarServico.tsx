@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { listarCarrosApi, listarMotosApi, registrarServicoApi, atualizarServicoApi, Carro, Moto, Servico } from '../../services/api'
@@ -12,7 +13,9 @@ import { BotaoMic, IndicadorGravando } from '../../components/BotaoMic'
 import { CampoData, formatarData } from '../../components/CampoData'
 import { mascaraMoeda, mascaraTelefone, parseMoeda } from '../../utils/mascaras'
 import { useVeiculo } from '../../contexts/VeiculoContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
+import { AvatarCircular } from '../../components/AvatarCircular'
 import { FotosPicker, FotoSections, FOTOS_VAZIAS } from '../../components/FotosPicker'
 import { buscarFotos, salvarFotos, temFotos } from '../../utils/fotosStorage'
 
@@ -27,9 +30,21 @@ function parseDateStr(dateStr: string): Date {
 
 export function TelaRegistrarServico({ navigation, route }: Props) {
   const edit: Servico | undefined = route.params?.registroParaEditar
+  const { proprietario } = useAuth()
   const { veiculoAtivo } = useVeiculo()
   const { requireAuth, estaLogado } = useAuthGuard()
+  const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
   const [fotos, setFotos] = useState<FotoSections>(FOTOS_VAZIAS)
+
+  const tipoRef           = useRef<TextInput>(null)
+  const descricaoRef      = useRef<TextInput>(null)
+  const custoRef          = useRef<TextInput>(null)
+  const estabelecimentoRef = useRef<TextInput>(null)
+  const telEstabRef       = useRef<TextInput>(null)
+  const profissionalRef   = useRef<TextInput>(null)
+  const telProfRef        = useRef<TextInput>(null)
+  const garantiaRef       = useRef<TextInput>(null)
+  const kilometragemRef   = useRef<TextInput>(null)
 
   const [tipo,                    setTipo]                    = useState(edit?.tipo ?? '')
   const [descricao,               setDescricao]               = useState(edit?.descricao ?? '')
@@ -159,14 +174,14 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
       try {
         if (edit) {
           await atualizarServicoApi(edit.id, payload)
-          const rec = { veiculoId: veiculoId!, registroId: edit.id, tipoRegistro: 'servico' as const, ...fotos }
+          const rec = { veiculoId: veiculoId!, registroId: edit.id, tipoRegistro: 'servico' as const, nomeRegistro: tipo.trim(), ...fotos }
           if (temFotos(rec)) await salvarFotos(rec)
           Alert.alert('Sucesso!', 'Serviço atualizado com sucesso.', [
             { text: 'OK', onPress: () => navigation.goBack() },
           ])
         } else {
           const res = await registrarServicoApi(payload)
-          const rec = { veiculoId: veiculoId!, registroId: res.data.id, tipoRegistro: 'servico' as const, ...fotos }
+          const rec = { veiculoId: veiculoId!, registroId: res.data.id, tipoRegistro: 'servico' as const, nomeRegistro: tipo.trim(), ...fotos }
           if (temFotos(rec)) await salvarFotos(rec)
           Alert.alert('Sucesso!', 'Serviço registrado com sucesso.', [
             { text: 'OK', onPress: () => navigation.goBack() },
@@ -183,26 +198,44 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
   return (
     <SafeAreaView style={estilos.safe} edges={['top']}>
       <View style={estilos.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityLabel="Voltar"
+          accessibilityRole="button"
+        >
           <Ionicons name="arrow-back" size={24} color={CORES.branco} />
         </TouchableOpacity>
-        <Text style={estilos.headerTitulo}>{edit ? 'Editar Serviço' : 'Registrar Serviço'}</Text>
-        <View style={{ width: 24 }} />
+        <View style={estilos.headerDireita}>
+          <AvatarCircular uri={proprietario?.fotoPerfil} size={34} />
+          <View style={{ marginLeft: ESPACOS.xs }}>
+            <AppText style={estilos.headerOla}>Olá,</AppText>
+            <AppText style={estilos.headerNome}>{apelido}</AppText>
+          </View>
+        </View>
       </View>
+
+      {/* TÍTULO */}
+      <View style={estilos.tituloRow}>
+        <Ionicons name="construct-outline" size={24} color={CORES.secundaria} />
+        <AppText style={estilos.tituloTexto}>{edit ? 'Editar Serviço' : 'Registrar Serviço'}</AppText>
+      </View>
+      <View style={estilos.divisoria} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={estilos.scroll} contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
 
           {/* Seletor de veículo */}
-          <Text style={estilos.label}>
-            Veículo <Text style={estilos.obrig}>*</Text>
-          </Text>
+          <AppText style={estilos.label}>
+            Veículo <AppText style={estilos.obrig}>*</AppText>
+          </AppText>
           {carregandoVeiculos ? (
             <ActivityIndicator color={CORES.secundaria} style={{ marginVertical: ESPACOS.md }} />
           ) : veiculos.length === 0 ? (
             <TouchableOpacity style={estilos.avisoVeiculo} onPress={() => navigation.navigate('RegistrarCarro')}>
               <Ionicons name="alert-circle-outline" size={18} color={CORES.atencao} />
-              <Text style={estilos.avisoTexto}>Nenhum veículo cadastrado. Toque para cadastrar.</Text>
+              <AppText style={estilos.avisoTexto}>Nenhum veículo cadastrado. Toque para cadastrar.</AppText>
             </TouchableOpacity>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.chipScroll}>
@@ -211,48 +244,57 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
                   key={v.id}
                   style={[estilos.chip, veiculoId === v.id && estilos.chipAtivo]}
                   onPress={() => { setVeiculoId(v.id); limparErro('veiculo') }}
+                  accessible={true}
+                  accessibilityLabel={`Selecionar veículo ${v.label}`}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: veiculoId === v.id }}
                 >
-                  <Text style={[estilos.chipTexto, veiculoId === v.id && estilos.chipTextoAtivo]} numberOfLines={1}>
+                  <AppText style={[estilos.chipTexto, veiculoId === v.id && estilos.chipTextoAtivo]} numberOfLines={1}>
                     {v.label}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           )}
-          {!!erros.veiculo && <Text style={estilos.textoErro}>{erros.veiculo}</Text>}
+          {!!erros.veiculo && <AppText style={estilos.textoErro}>{erros.veiculo}</AppText>}
 
           <View style={{ height: ESPACOS.md }} />
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Tipo de serviço <Text style={estilos.obrig}>*</Text></Text>
+            <AppText style={estilos.label}>Tipo de serviço <AppText style={estilos.obrig}>*</AppText></AppText>
             <TextInput
+              ref={tipoRef}
               style={[estilos.input, erros.tipo ? estilos.inputErro : null]}
               value={tipo}
               onChangeText={t => { setTipo(t); limparErro('tipo') }}
               placeholder="Ex: Troca de óleo"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               autoCapitalize="sentences"
               autoCorrect={false}
+              returnKeyType="next"
               blurOnSubmit={false}
+              onSubmitEditing={() => descricaoRef.current?.focus()}
             />
-            {!!erros.tipo && <Text style={estilos.textoErro}>{erros.tipo}</Text>}
+            {!!erros.tipo && <AppText style={estilos.textoErro}>{erros.tipo}</AppText>}
           </View>
 
           {/* Descrição com microfone */}
           <View style={estilos.campo}>
             <View style={estilos.labelRow}>
-              <Text style={estilos.label}>Descrição</Text>
+              <AppText style={estilos.label}>Descrição</AppText>
               <BotaoMic gravando={isRecording && gravandoDescricao} onPress={toggleMic} />
             </View>
             {isRecording && gravandoDescricao && <IndicadorGravando />}
             <TextInput
+              ref={descricaoRef}
               style={[estilos.input, { height: 80, textAlignVertical: 'top', paddingTop: ESPACOS.sm }]}
               value={descricao}
               onChangeText={setDescricao}
               placeholder="Detalhes adicionais..."
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               multiline
               autoCapitalize="sentences"
+              returnKeyType="next"
               blurOnSubmit={false}
             />
           </View>
@@ -268,103 +310,123 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
               />
             </View>
             <View style={[estilos.campo, { flex: 1 }]}>
-              <Text style={estilos.label}>Custo (R$)</Text>
+              <AppText style={estilos.label}>Custo (R$)</AppText>
               <TextInput
+                ref={custoRef}
                 style={estilos.input}
                 value={custo}
                 onChangeText={t => setCusto(mascaraMoeda(t))}
                 placeholder="R$ 0,00"
-                placeholderTextColor={CORES.cinzaTexto}
+                placeholderTextColor={CORES.placeholder}
                 keyboardType="numeric"
+                returnKeyType="next"
                 blurOnSubmit={false}
+                onSubmitEditing={() => estabelecimentoRef.current?.focus()}
               />
             </View>
           </View>
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Estabelecimento</Text>
+            <AppText style={estilos.label}>Estabelecimento</AppText>
             <TextInput
+              ref={estabelecimentoRef}
               style={estilos.input}
               value={estabelecimento}
               onChangeText={setEstabelecimento}
               placeholder="Ex: Auto Center Silva"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
+              returnKeyType="next"
               blurOnSubmit={false}
+              onSubmitEditing={() => telEstabRef.current?.focus()}
             />
           </View>
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Telefone do estabelecimento</Text>
+            <AppText style={estilos.label}>Telefone do estabelecimento</AppText>
             <TextInput
+              ref={telEstabRef}
               style={[estilos.input, erros.telefoneEstabelecimento ? estilos.inputErro : telEstabValido ? estilos.inputValido : null]}
               value={telefoneEstabelecimento}
               onChangeText={t => { setTelefoneEstabelecimento(mascaraTelefone(t)); limparErro('telefoneEstabelecimento'); setTelEstabValido(false) }}
               placeholder="(00) 00000-0000"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               keyboardType="phone-pad"
               onBlur={handleTelEstabBlur}
               onFocus={() => limparErro('telefoneEstabelecimento')}
+              returnKeyType="next"
               blurOnSubmit={false}
+              onSubmitEditing={() => profissionalRef.current?.focus()}
             />
-            {!!erros.telefoneEstabelecimento && <Text style={estilos.textoErro}>{erros.telefoneEstabelecimento}</Text>}
+            {!!erros.telefoneEstabelecimento && <AppText style={estilos.textoErro}>{erros.telefoneEstabelecimento}</AppText>}
           </View>
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Profissional</Text>
+            <AppText style={estilos.label}>Profissional</AppText>
             <TextInput
+              ref={profissionalRef}
               style={estilos.input}
               value={profissional}
               onChangeText={setProfissional}
               placeholder="Ex: João Mecânico"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
+              returnKeyType="next"
               blurOnSubmit={false}
+              onSubmitEditing={() => telProfRef.current?.focus()}
             />
           </View>
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Telefone do profissional</Text>
+            <AppText style={estilos.label}>Telefone do profissional</AppText>
             <TextInput
+              ref={telProfRef}
               style={[estilos.input, erros.telefoneProfissional ? estilos.inputErro : telProfValido ? estilos.inputValido : null]}
               value={telefoneProfissional}
               onChangeText={t => { setTelefoneProfissional(mascaraTelefone(t)); limparErro('telefoneProfissional'); setTelProfValido(false) }}
               placeholder="(00) 00000-0000"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               keyboardType="phone-pad"
               onBlur={handleTelProfBlur}
               onFocus={() => limparErro('telefoneProfissional')}
+              returnKeyType="next"
               blurOnSubmit={false}
+              onSubmitEditing={() => garantiaRef.current?.focus()}
             />
-            {!!erros.telefoneProfissional && <Text style={estilos.textoErro}>{erros.telefoneProfissional}</Text>}
+            {!!erros.telefoneProfissional && <AppText style={estilos.textoErro}>{erros.telefoneProfissional}</AppText>}
           </View>
 
           <View style={estilos.linha}>
             <View style={[estilos.campo, { flex: 1, marginRight: ESPACOS.sm }]}>
-              <Text style={estilos.label}>Garantia</Text>
+              <AppText style={estilos.label}>Garantia</AppText>
               <TextInput
+                ref={garantiaRef}
                 style={estilos.input}
                 value={garantia}
                 onChangeText={setGarantia}
                 placeholder="Ex: 6 meses"
-                placeholderTextColor={CORES.cinzaTexto}
+                placeholderTextColor={CORES.placeholder}
                 autoCapitalize="sentences"
                 autoCorrect={false}
+                returnKeyType="next"
                 blurOnSubmit={false}
+                onSubmitEditing={() => kilometragemRef.current?.focus()}
               />
             </View>
             <View style={[estilos.campo, { flex: 1 }]}>
-              <Text style={estilos.label}>Kilometragem</Text>
+              <AppText style={estilos.label}>Kilometragem</AppText>
               <TextInput
+                ref={kilometragemRef}
                 style={estilos.input}
                 value={kilometragem}
                 onChangeText={setKilometragem}
                 placeholder="Ex: 45000"
-                placeholderTextColor={CORES.cinzaTexto}
+                placeholderTextColor={CORES.placeholder}
                 keyboardType="numeric"
-                blurOnSubmit={false}
+                returnKeyType="done"
+                blurOnSubmit={true}
               />
             </View>
           </View>
@@ -380,10 +442,14 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
             style={[estilos.botao, carregando && { opacity: 0.6 }]}
             onPress={handleSalvar}
             disabled={carregando}
+            accessible={true}
+            accessibilityLabel={edit ? 'Salvar alterações do serviço' : 'Salvar serviço'}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: carregando }}
           >
             {carregando
               ? <ActivityIndicator color={CORES.branco} />
-              : <Text style={estilos.textoBotao}>{edit ? 'Salvar Alterações' : 'Salvar'}</Text>
+              : <AppText style={estilos.textoBotao}>{edit ? 'Salvar Alterações' : 'Salvar'}</AppText>
             }
           </TouchableOpacity>
         </ScrollView>
@@ -403,6 +469,20 @@ const estilos = StyleSheet.create({
     paddingVertical: ESPACOS.md,
   },
   headerTitulo:   { color: CORES.branco, fontSize: FONTES.media, fontWeight: '700' },
+  headerCentro:   { flexDirection: 'row', alignItems: 'center' },
+  headerDireita:  { flexDirection: 'row', alignItems: 'center' },
+  headerOla:      { color: CORES.cinzaTexto, fontSize: FONTES.pequena },
+  headerNome:     { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
+  tituloRow: {
+    backgroundColor: CORES.branco,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ESPACOS.xs,
+    paddingHorizontal: ESPACOS.md,
+    paddingVertical: ESPACOS.sm,
+  },
+  tituloTexto: { fontSize: FONTES.subtitulo, fontWeight: '700', color: CORES.pretinho },
+  divisoria:   { height: 2, backgroundColor: CORES.secundaria },
   scroll:         { flex: 1, backgroundColor: CORES.cinzaClaro },
   conteudo:       { padding: ESPACOS.lg, paddingBottom: ESPACOS.xxl },
   campo:          { marginBottom: ESPACOS.md },

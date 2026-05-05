@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
-import { View, Text, Animated, StyleSheet } from 'react-native'
+import { View, Animated, StyleSheet } from 'react-native'
+import { AppText } from '../components/AppText'
 import LogomarcaIcone from '../assets/icons/LOGOMARCA_ICONE1.svg'
 import Logomarca1 from '../assets/icons/LOGOMARCA_1.svg'
 
@@ -35,7 +36,7 @@ export function TelaSplash({ navigation }: Props) {
       <Animated.View style={[estilos.conteudo, { opacity: opacidade }]}>
         {/* SVG já contém carro + letras "ANOTAÍ" + prancheta como paths */}
         <Logomarca1 width={260} height={260} color="white" />
-        <Text style={estilos.slogan}>Manutenção organizada, veículo protegido.</Text>
+        <AppText style={estilos.slogan}>Manutenção organizada, veículo protegido.</AppText>
       </Animated.View>
     </View>
   )

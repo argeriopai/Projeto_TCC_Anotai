@@ -14,7 +14,7 @@ interface Props {
   indiceInicial: number
   categoriaLabel: string
   onFechar: () => void
-  onAdicionar: () => void
+  onAdicionar?: () => void
   onExcluir: (indice: number) => void
 }
 
@@ -96,13 +96,15 @@ export function FotosModal({ visivel, fotos, indiceInicial, categoriaLabel, onFe
           </View>
         )}
 
-        {/* Rodapé */}
-        <View style={es.rodape}>
-          <TouchableOpacity style={es.btnAdicionar} onPress={onAdicionar}>
-            <Ionicons name="add" size={18} color={CORES.branco} />
-            <Text style={es.btnAdicionarTexto}>Adicionar Foto</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Rodapé — só exibido quando adição é permitida */}
+        {onAdicionar && (
+          <View style={es.rodape}>
+            <TouchableOpacity style={es.btnAdicionar} onPress={onAdicionar}>
+              <Ionicons name="add" size={18} color={CORES.branco} />
+              <Text style={es.btnAdicionarTexto}>Adicionar Foto</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
       </View>
     </Modal>

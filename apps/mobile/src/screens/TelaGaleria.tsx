@@ -1,22 +1,24 @@
 import React, { useState, useCallback } from 'react'
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Image, ActivityIndicator,
+  View, TouchableOpacity, StyleSheet,
+  ScrollView, Image, ActivityIndicator, Alert,
 } from 'react-native'
+import { AppText } from '../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthGuard } from '../hooks/useAuthGuard'
 import { listarCarrosApi, listarMotosApi } from '../services/api'
-import { listarTodasFotos, FotoRegistro, temFotos } from '../utils/fotosStorage'
+import { listarTodasFotos, FotoRegistro, temFotos, salvarFotos, buscarFotos } from '../utils/fotosStorage'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { FotosModal } from '../components/FotosModal'
-import Logomarca1 from '../assets/icons/LOGOMARCA_1.svg'
+import { AvatarCircular } from '../components/AvatarCircular'
 
 interface Props { navigation: any }
 
 type FiltroKey = 'todos' | 'servico' | 'notaFiscal' | 'garantia'
+type CategoriaFoto = 'fotosServico' | 'fotosNotaFiscal' | 'fotosGarantia'
 
 const FILTROS: { key: FiltroKey; label: string }[] = [
   { key: 'todos',      label: 'Todos'      },
@@ -34,10 +36,19 @@ interface VeiculoComFotos {
   registros: FotoRegistro[]
 }
 
+interface FotoGrupo {
+  uris: string[]
+  label: string
+  categoria: CategoriaFoto
+  registroId: string
+}
+
 interface ModalState {
   fotos: string[]
   indice: number
   label: string
+  registroId: string
+  categoria: CategoriaFoto
 }
 
 export function TelaGaleria({ navigation }: Props) {
@@ -103,19 +114,54 @@ export function TelaGaleria({ navigation }: Props) {
     })
   }
 
-  function fotosParaFiltro(reg: FotoRegistro): { uris: string[]; label: string }[] {
-    const resultado: { uris: string[]; label: string }[] = []
+  function fotosParaFiltro(reg: FotoRegistro): FotoGrupo[] {
+    const resultado: FotoGrupo[] = []
     if ((filtro === 'todos' || filtro === 'servico') && reg.fotosServico.length > 0)
-      resultado.push({ uris: reg.fotosServico, label: 'Foto do Serviço / Peça' })
+      resultado.push({ uris: reg.fotosServico, label: reg.nomeRegistro || 'Sem descrição', categoria: 'fotosServico', registroId: reg.registroId })
     if ((filtro === 'todos' || filtro === 'notaFiscal') && reg.fotosNotaFiscal.length > 0)
-      resultado.push({ uris: reg.fotosNotaFiscal, label: 'Nota Fiscal' })
+      resultado.push({ uris: reg.fotosNotaFiscal, label: 'Nota Fiscal', categoria: 'fotosNotaFiscal', registroId: reg.registroId })
     if ((filtro === 'todos' || filtro === 'garantia') && reg.fotosGarantia.length > 0)
-      resultado.push({ uris: reg.fotosGarantia, label: 'Garantia' })
+      resultado.push({ uris: reg.fotosGarantia, label: 'Garantia', categoria: 'fotosGarantia', registroId: reg.registroId })
     return resultado
   }
 
-  function abrirFoto(uris: string[], indice: number, label: string) {
-    setModalState({ fotos: uris, indice, label })
+  function abrirFoto(uris: string[], indice: number, label: string, registroId: string, categoria: CategoriaFoto) {
+    setModalState({ fotos: uris, indice, label, registroId, categoria })
+  }
+
+  function handleExcluirDaGaleria(indice: number) {
+    if (!modalState) return
+    const { registroId, categoria } = modalState
+    Alert.alert(
+      'Excluir foto',
+      'Deseja excluir esta foto?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir', style: 'destructive',
+          onPress: async () => {
+            try {
+              const registro = await buscarFotos(registroId)
+              if (!registro) return
+              const novasFotos = registro[categoria].filter((_, i) => i !== indice)
+              await salvarFotos({ ...registro, [categoria]: novasFotos })
+              if (novasFotos.length === 0) {
+                setModalState(null)
+              } else {
+                setModalState(prev => prev ? {
+                  ...prev,
+                  fotos: novasFotos,
+                  indice: indice >= novasFotos.length ? novasFotos.length - 1 : indice,
+                } : null)
+              }
+              await carregarGaleria()
+            } catch {
+              Alert.alert('Erro', 'Não foi possível excluir a foto.', [{ text: 'OK' }])
+            }
+          },
+        },
+      ]
+    )
   }
 
   const totalFotos = veiculos.reduce((acc, v) =>
@@ -127,14 +173,29 @@ export function TelaGaleria({ navigation }: Props) {
 
       {/* HEADER */}
       <View style={es.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityLabel="Voltar"
+          accessibilityRole="button"
+        >
           <Ionicons name="arrow-back" size={24} color={CORES.branco} />
         </TouchableOpacity>
         <View style={es.headerCentro}>
-          <Logomarca1 width={60} height={30} color="white" />
-          <Text style={es.headerNome}>{proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? ''}</Text>
+          <AvatarCircular uri={proprietario?.fotoPerfil} size={28} />
+          <View style={{ marginLeft: ESPACOS.xs }}>
+            <AppText style={es.headerOla}>Olá,</AppText>
+            <AppText style={es.headerNome}>{proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'}</AppText>
+          </View>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Home')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityLabel="Ir para Início"
+          accessibilityRole="button"
+        >
           <Ionicons name="home-outline" size={24} color={CORES.secundaria} />
         </TouchableOpacity>
       </View>
@@ -143,9 +204,9 @@ export function TelaGaleria({ navigation }: Props) {
       <View style={es.tituloRow}>
         <View style={es.tituloEsquerda}>
           <Ionicons name="images-outline" size={22} color={CORES.secundaria} />
-          <Text style={es.tituloTexto}>Galeria</Text>
+          <AppText style={es.tituloTexto}>Galeria</AppText>
         </View>
-        {!carregando && <Text style={es.totalFotos}>{totalFotos} foto{totalFotos !== 1 ? 's' : ''}</Text>}
+        {!carregando && <AppText style={es.totalFotos}>{totalFotos} foto{totalFotos !== 1 ? 's' : ''}</AppText>}
       </View>
       <View style={es.divisoria} />
 
@@ -157,8 +218,12 @@ export function TelaGaleria({ navigation }: Props) {
               key={f.key}
               style={[es.chip, filtro === f.key && es.chipAtivo]}
               onPress={() => setFiltro(f.key)}
+              accessible={true}
+              accessibilityLabel={`Filtrar por ${f.label}`}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: filtro === f.key }}
             >
-              <Text style={[es.chipTexto, filtro === f.key && es.chipTextoAtivo]}>{f.label}</Text>
+              <AppText style={[es.chipTexto, filtro === f.key && es.chipTextoAtivo]}>{f.label}</AppText>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -172,8 +237,8 @@ export function TelaGaleria({ navigation }: Props) {
       ) : veiculos.length === 0 ? (
         <View style={es.centralizador}>
           <Ionicons name="images-outline" size={64} color={CORES.cinzaTexto} />
-          <Text style={es.semDadosTitulo}>Nenhuma foto encontrada</Text>
-          <Text style={es.semDadosSub}>Adicione fotos ao registrar serviços e peças</Text>
+          <AppText style={es.semDadosTitulo}>Nenhuma foto encontrada</AppText>
+          <AppText style={es.semDadosSub}>Adicione fotos ao registrar serviços e peças</AppText>
         </View>
       ) : (
         <ScrollView style={es.scroll} contentContainerStyle={es.scrollConteudo} showsVerticalScrollIndicator={false}>
@@ -188,8 +253,8 @@ export function TelaGaleria({ navigation }: Props) {
                 <TouchableOpacity style={es.veiculoHeader} onPress={() => toggleExpandido(veiculo.id)} activeOpacity={0.85}>
                   <Ionicons name={veiculo.tipo === 'carro' ? 'car' : 'bicycle'} size={20} color={CORES.branco} />
                   <View style={{ flex: 1, marginLeft: ESPACOS.sm }}>
-                    <Text style={es.veiculoNome}>{veiculo.marca} {veiculo.modelo}</Text>
-                    <Text style={es.veiculoPlaca}>{veiculo.placa}</Text>
+                    <AppText style={es.veiculoNome}>{veiculo.marca} {veiculo.modelo}</AppText>
+                    <AppText style={es.veiculoPlaca}>{veiculo.placa}</AppText>
                   </View>
                   <Ionicons name={aberto ? 'chevron-up' : 'chevron-down'} size={18} color={CORES.branco} />
                 </TouchableOpacity>
@@ -208,17 +273,17 @@ export function TelaGaleria({ navigation }: Props) {
                               size={14}
                               color={CORES.cinzaTexto}
                             />
-                            <Text style={es.registroLabel}>
+                            <AppText style={es.registroLabel}>
                               {reg.tipoRegistro === 'servico' ? 'Serviço' : 'Peça'}
-                            </Text>
+                            </AppText>
                           </View>
 
-                          {grupos.map(({ uris, label }) => (
+                          {grupos.map(({ uris, label, categoria, registroId }) => (
                             <View key={label} style={es.grupoFotos}>
-                              <Text style={es.grupoLabel}>{label} ({uris.length})</Text>
+                              <AppText style={es.grupoLabel}>{label} ({uris.length})</AppText>
                               <View style={es.grade}>
                                 {uris.map((uri, idx) => (
-                                  <TouchableOpacity key={idx} onPress={() => abrirFoto(uris, idx, label)} activeOpacity={0.85}>
+                                  <TouchableOpacity key={idx} onPress={() => abrirFoto(uris, idx, label, registroId, categoria)} activeOpacity={0.85}>
                                     <Image source={{ uri }} style={es.thumbnail} />
                                   </TouchableOpacity>
                                 ))}
@@ -244,8 +309,7 @@ export function TelaGaleria({ navigation }: Props) {
           indiceInicial={modalState.indice}
           categoriaLabel={modalState.label}
           onFechar={() => setModalState(null)}
-          onAdicionar={() => {}}
-          onExcluir={() => {}}
+          onExcluir={handleExcluirDaGaleria}
         />
       )}
 
@@ -269,13 +333,9 @@ const es = StyleSheet.create({
   headerCentro: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: ESPACOS.sm,
   },
-  headerNome: {
-    color: CORES.branco,
-    fontSize: FONTES.normal,
-    fontWeight: '700',
-  },
+  headerOla:  { color: CORES.cinzaTexto, fontSize: FONTES.pequena },
+  headerNome: { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
 
   tituloRow: {
     backgroundColor: CORES.branco,
@@ -297,7 +357,7 @@ const es = StyleSheet.create({
   },
   totalFotos: {
     fontSize: FONTES.pequena,
-    color: CORES.cinzaTexto,
+    color: CORES.textoSecundario,
   },
   divisoria: {
     height: 2,
@@ -328,7 +388,7 @@ const es = StyleSheet.create({
   },
   chipTexto: {
     fontSize: FONTES.pequena,
-    color: CORES.cinzaTexto,
+    color: CORES.textoSecundario,
     fontWeight: '600',
   },
   chipTextoAtivo: {
@@ -346,12 +406,12 @@ const es = StyleSheet.create({
   semDadosTitulo: {
     fontSize: FONTES.media,
     fontWeight: '700',
-    color: CORES.cinzaTexto,
+    color: CORES.pretinho,
     textAlign: 'center',
   },
   semDadosSub: {
     fontSize: FONTES.pequena,
-    color: CORES.cinzaTexto,
+    color: CORES.textoSecundario,
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -399,7 +459,7 @@ const es = StyleSheet.create({
   registroLabel: {
     fontSize: FONTES.pequena,
     fontWeight: '700',
-    color: CORES.cinzaTexto,
+    color: CORES.textoSecundario,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

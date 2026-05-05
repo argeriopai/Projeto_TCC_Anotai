@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react'
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView,
+  View, TouchableOpacity, StyleSheet, ScrollView,
   Animated, Dimensions, TouchableWithoutFeedback, Alert,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
@@ -13,29 +14,16 @@ import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import LogomarcaIcone1 from '../../assets/icons/LOGOMARCA_ICONE1.svg'
 import Logomarca1      from '../../assets/icons/LOGOMARCA_1.svg'
 
-// Botões de ação — ícones de Registro
-import IconeRegCarro        from '../../assets/icons/ICONE_REGITRO_CARRO.svg'
-import IconeRegMoto         from '../../assets/icons/ICONE_REGITRO_MOTO.svg'
-import IconeRegServico      from '../../assets/icons/ICONE_REGITRO_SERVIÇO.svg'
-import IconeRegPecas        from '../../assets/icons/ICONE_REGITRO_PEÇAS.svg'
-import IconeRegNotificacao  from '../../assets/icons/ICONE_REGITRO_NOTIFICAÇÃO.svg'
+import { AvatarCircular } from '../../components/AvatarCircular'
 
-// Bottom navigation — ícones de Relatório/Navegação
-import IconeNavInicio       from '../../assets/icons/ICONE_INICIO_BOTTOM_NAV.svg'
-import IconeNavServicos     from '../../assets/icons/ICONE_RELATORIO_SERVIÇOS.svg'
-import IconeNavPecas        from '../../assets/icons/ICONE_RELATORIO_PEÇAS.svg'
-import IconeNavNotificacao  from '../../assets/icons/ICONE_RELATORIO_NOTIFICAÇÃO.svg'
-import IconeNavVeiculo      from '../../assets/icons/ICONE_RELATORIO_VEICULOS.svg'
-
-// Drawer lateral — ícones de Menu
-import IconeMenuUsuario     from '../../assets/icons/ICONE_MENU_LATERAL_USUARIO.svg'
-import IconeMenuCarro       from '../../assets/icons/ICONE_MENU_LATERAL_CARRO.svg'
-import IconeMenuContato     from '../../assets/icons/ICONE_MENU_LATERAL_CONTATO.svg'
-import IconeMenuSair        from '../../assets/icons/ICONE_MENU_LATERAL_SAIR.svg'
-
-const IconeGaleria = ({ color }: { width?: number; height?: number; color?: string }) => (
-  <Ionicons name="images-outline" size={24} color={color ?? '#fff'} />
-)
+// Drawer lateral — ícones de Menu (Ionicons para tamanho uniforme)
+type IProps = { width?: number; height?: number; color?: string }
+const IconeMenuUsuario = ({ width = 26, color }: IProps) => <Ionicons name="person-outline"  size={width} color={color ?? '#fff'} />
+const IconeMenuCarro   = ({ width = 26, color }: IProps) => <Ionicons name="car-outline"     size={width} color={color ?? '#fff'} />
+const IconeGaleria     = ({ width = 26, color }: IProps) => <Ionicons name="images-outline"  size={width} color={color ?? '#fff'} />
+const IconeMenuContato = ({ width = 26, color }: IProps) => <Ionicons name="mail-outline"    size={width} color={color ?? '#fff'} />
+const IconeMenuSair          = ({ width = 26, color }: IProps) => <Ionicons name="log-out-outline" size={width} color={color ?? '#fff'} />
+const IconeAcessibilidade    = ({ width = 26, color }: IProps) => <Ionicons name="eye-outline"     size={width} color={color ?? '#fff'} />
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const DRAWER_WIDTH = 280
@@ -52,7 +40,14 @@ interface Props {
 }
 
 type Aba = 'inicio' | 'servicos' | 'pecas' | 'revisoes' | 'veiculo'
-type AbaNavItem = { key: string; label: string; Icone: any; rota: string | null }
+type LibIcon = 'mci' | undefined
+type BotaoItem = { label: string; icone: string; lib?: LibIcon; onPress: () => void }
+type AbaNavItem = { key: string; label: string; icone: string; lib?: LibIcon; rota: string | null }
+
+function NavIcon({ icone, lib, size, color }: { icone: string; lib?: LibIcon; size: number; color: string }) {
+  if (lib === 'mci') return <MaterialCommunityIcons name={icone as any} size={size} color={color} />
+  return <Ionicons name={icone as any} size={size} color={color} />
+}
 
 export function TelaHome({ navigation }: Props) {
   const { proprietario, estaLogado, logout } = useAuth()
@@ -122,28 +117,29 @@ export function TelaHome({ navigation }: Props) {
     setTimeout(() => navigation.navigate(tela), 300)
   }
 
-  const botoes = [
-    { label: 'Registrar Carro',        Icone: IconeRegCarro,       onPress: () => navigation.navigate('RegistrarCarro') },
-    { label: 'Registrar Moto',         Icone: IconeRegMoto,        onPress: () => navigation.navigate('RegistrarMoto') },
-    { label: 'Registrar Serviços',     Icone: IconeRegServico,     onPress: () => navigation.navigate('RegistrarServico') },
-    { label: 'Registrar Peças',        Icone: IconeRegPecas,       onPress: () => navigation.navigate('RegistrarPeca') },
-    { label: 'Registrar Revisões',     Icone: IconeRegNotificacao, onPress: () => navigation.navigate('RegistrarRevisao') },
+  const botoes: BotaoItem[] = [
+    { label: 'Registrar Carro',    icone: 'car-outline',       onPress: () => navigation.navigate('RegistrarCarro') },
+    { label: 'Registrar Moto',     icone: 'motorbike', lib: 'mci', onPress: () => navigation.navigate('RegistrarMoto') },
+    { label: 'Registrar Serviços', icone: 'construct-outline', onPress: () => navigation.navigate('RegistrarServico') },
+    { label: 'Registrar Peças',    icone: 'cog-outline',       onPress: () => navigation.navigate('RegistrarPeca') },
+    { label: 'Registrar Revisões', icone: 'calendar-outline',  onPress: () => navigation.navigate('RegistrarRevisao') },
   ]
 
   const abasNav: AbaNavItem[] = [
-    { key: 'inicio',      label: 'Início',      Icone: IconeNavInicio,      rota: null },
-    { key: 'servicos',    label: 'Serviços',    Icone: IconeNavServicos,    rota: 'Servicos' },
-    { key: 'pecas',       label: 'Peças',       Icone: IconeNavPecas,       rota: 'Pecas' },
-    { key: 'revisoes',    label: 'Revisões',    Icone: IconeNavNotificacao, rota: 'Revisoes' },
-    { key: 'veiculo',     label: 'Veículo',     Icone: IconeNavVeiculo,     rota: 'Veiculos' },
+    { key: 'inicio',   label: 'Início',   icone: 'home-outline',     rota: null },
+    { key: 'servicos', label: 'Serviços', icone: 'construct-outline', rota: 'Servicos' },
+    { key: 'pecas',    label: 'Peças',    icone: 'cog-outline',       rota: 'Pecas' },
+    { key: 'revisoes', label: 'Revisões', icone: 'calendar-outline',  rota: 'Revisoes' },
+    { key: 'veiculo',  label: 'Veículo',  icone: 'car-multiple', lib: 'mci', rota: 'Veiculos' },
   ]
 
   const itensDrawer = [
     { label: 'Meu Perfil', Icone: IconeMenuUsuario, onPress: () => { fecharDrawer(); setTimeout(() => requireAuth(() => navigation.navigate('MeuPerfil')), 300) }, vermelho: false },
     { label: 'Veículo',    Icone: IconeMenuCarro,   onPress: () => navegarDaDrawer('Veiculos'),                                                                     vermelho: false },
     { label: 'Galeria',    Icone: IconeGaleria,     onPress: () => { fecharDrawer(); setTimeout(() => requireAuth(() => navigation.navigate('Galeria')), 300) },    vermelho: false },
-    { label: 'Contato',    Icone: IconeMenuContato, onPress: () => navegarDaDrawer('Contato'),                                                                       vermelho: false },
-    { label: 'Sair',       Icone: IconeMenuSair,    onPress: handleLogout,                                                                                           vermelho: true  },
+    { label: 'Contato',        Icone: IconeMenuContato,    onPress: () => navegarDaDrawer('Contato'),        vermelho: false },
+    { label: 'Acessibilidade', Icone: IconeAcessibilidade, onPress: () => navegarDaDrawer('Acessibilidade'), vermelho: false },
+    { label: 'Sair',           Icone: IconeMenuSair,       onPress: handleLogout,                            vermelho: true  },
   ]
 
   return (
@@ -152,20 +148,32 @@ export function TelaHome({ navigation }: Props) {
 
         {/* HEADER */}
         <View style={estilos.header}>
-          <TouchableOpacity onPress={abrirDrawer} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity
+            onPress={abrirDrawer}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessible={true}
+            accessibilityLabel="Abrir menu de navegação"
+            accessibilityRole="button"
+          >
             <Ionicons name="menu-outline" size={28} color={CORES.branco} />
           </TouchableOpacity>
 
           <View style={estilos.headerCentro}>
             <Logomarca1 width={70} height={35} color="white" />
-            <Text style={estilos.headerTitulo}>
+            <AppText style={estilos.headerTitulo}>
               {estaLogado ? `Olá, ${apelido}!` : 'Bem vindo!'}
-            </Text>
+            </AppText>
           </View>
 
           {estaLogado ? (
-            <TouchableOpacity onPress={handleLogout} style={estilos.botaoSair}>
-              <Text style={estilos.textoBotaoSair}>Sair</Text>
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={estilos.botaoSair}
+              accessible={true}
+              accessibilityLabel="Sair da conta"
+              accessibilityRole="button"
+            >
+              <AppText style={estilos.textoBotaoSair}>Sair</AppText>
             </TouchableOpacity>
           ) : (
             <View style={{ width: 48 }} />
@@ -177,18 +185,28 @@ export function TelaHome({ navigation }: Props) {
 
           {/* Banner guest mode */}
           {!estaLogado && (
-            <TouchableOpacity style={estilos.bannerGuest} onPress={() => navigation.navigate('Login')}>
+            <TouchableOpacity
+              style={estilos.bannerGuest}
+              onPress={() => navigation.navigate('Login')}
+              accessible={true}
+              accessibilityLabel="Entrar ou criar conta para salvar seus registros na nuvem"
+              accessibilityRole="button"
+            >
               <Ionicons name="person-circle-outline" size={28} color={CORES.branco} />
               <View style={{ flex: 1, marginLeft: ESPACOS.sm }}>
-                <Text style={estilos.bannerGuestTitulo}>Entrar / Criar conta</Text>
-                <Text style={estilos.bannerGuestSub}>Salve seus registros na nuvem</Text>
+                <AppText style={estilos.bannerGuestTitulo}>Entrar / Criar conta</AppText>
+                <AppText style={estilos.bannerGuestSub}>Salve seus registros na nuvem</AppText>
               </View>
               <Ionicons name="chevron-forward" size={20} color={CORES.branco} />
             </TouchableOpacity>
           )}
 
-          {/* Carrossel de anúncios */}
-          <View style={estilos.carrosselContainer}>
+          {/* Carrossel de anúncios — decorativo, oculto do leitor de tela */}
+          <View
+            style={estilos.carrosselContainer}
+            accessibilityElementsHidden={true}
+            importantForAccessibility="no-hide-descendants"
+          >
             <ScrollView
               ref={carouselRef}
               horizontal
@@ -199,10 +217,10 @@ export function TelaHome({ navigation }: Props) {
             >
               {slides.map((slide, i) => (
                 <View key={i} style={[estilos.carrosselSlide, { backgroundColor: slide.fundo }]}>
-                  <Text style={estilos.carrosselTitulo}>{slide.titulo}</Text>
-                  <Text style={[estilos.carrosselSubtitulo, slide.subtituloVerde && estilos.carrosselSubtituloVerde]}>
+                  <AppText style={estilos.carrosselTitulo}>{slide.titulo}</AppText>
+                  <AppText style={[estilos.carrosselSubtitulo, slide.subtituloVerde && estilos.carrosselSubtituloVerde]}>
                     {slide.subtitulo}
-                  </Text>
+                  </AppText>
                 </View>
               ))}
             </ScrollView>
@@ -214,32 +232,44 @@ export function TelaHome({ navigation }: Props) {
           </View>
 
           {/* Subtítulo */}
-          <Text style={estilos.subtituloAcoes}>Faça seus registros</Text>
+          <AppText style={estilos.subtituloAcoes}>Faça seus registros</AppText>
 
           {/* Botões de ação */}
-          {botoes.map(({ label, Icone, onPress }) => (
-            <TouchableOpacity key={label} style={estilos.botaoAcao} onPress={onPress} activeOpacity={0.7}>
+          {botoes.map(({ label, icone, lib, onPress }) => (
+            <TouchableOpacity
+              key={label}
+              style={estilos.botaoAcao}
+              onPress={onPress}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityLabel={label}
+              accessibilityRole="button"
+            >
               <View style={estilos.botaoAcaoIcone}>
-                <Icone width={32} height={32} color={CORES.secundaria} />
+                <NavIcon icone={icone} lib={lib} size={22} color={CORES.secundaria} />
               </View>
               <View style={estilos.barraVerde} />
-              <Text style={estilos.botaoAcaoLabel}>{label}</Text>
+              <AppText style={estilos.botaoAcaoLabel}>{label}</AppText>
               <Ionicons name="chevron-forward" size={18} color={CORES.cinzaTexto} style={{ marginLeft: 'auto' }} />
             </TouchableOpacity>
           ))}
 
-          {/* Banner inferior redesenhado */}
-          <View style={estilos.bannerInferior}>
+          {/* Banner inferior — decorativo, oculto do leitor de tela */}
+          <View
+            style={estilos.bannerInferior}
+            accessibilityElementsHidden={true}
+            importantForAccessibility="no-hide-descendants"
+          >
             <View style={estilos.bannerLadoIcone}>
-              <IconeRegServico width={64} height={64} color={CORES.secundaria} />
+              <Ionicons name="construct-outline" size={64} color={CORES.secundaria} />
               <Ionicons name="car" size={36} color={CORES.branco} style={{ marginTop: -6 }} />
             </View>
             <View style={estilos.bannerLadoTexto}>
-              <Text style={estilos.bannerTextoBranco}>Nunca mais</Text>
-              <Text style={estilos.bannerTextoVerde}>ESQUEÇA</Text>
-              <Text style={estilos.bannerTextoBranco}>do que já</Text>
-              <Text style={estilos.bannerTextoVerde}>FOI FEITO</Text>
-              <Text style={estilos.bannerTextoBranco}>no seu Veículo</Text>
+              <AppText style={estilos.bannerTextoBranco}>Nunca mais</AppText>
+              <AppText style={estilos.bannerTextoVerde}>ESQUEÇA</AppText>
+              <AppText style={estilos.bannerTextoBranco}>do que já</AppText>
+              <AppText style={estilos.bannerTextoVerde}>FOI FEITO</AppText>
+              <AppText style={estilos.bannerTextoBranco}>no seu Veículo</AppText>
             </View>
           </View>
 
@@ -248,8 +278,11 @@ export function TelaHome({ navigation }: Props) {
             <TouchableOpacity
               onPress={() => navigation.navigate('Cadastro')}
               style={estilos.botaoCadastro}
+              accessible={true}
+              accessibilityLabel="Cadastre-se gratuitamente"
+              accessibilityRole="button"
             >
-              <Text style={estilos.textoBotaoCadastro}>Cadastre-se aqui!</Text>
+              <AppText style={estilos.textoBotaoCadastro}>Cadastre-se aqui!</AppText>
             </TouchableOpacity>
           )}
 
@@ -257,7 +290,7 @@ export function TelaHome({ navigation }: Props) {
 
         {/* BOTTOM NAVIGATION */}
         <View style={estilos.bottomNav}>
-          {abasNav.map(({ key, label, Icone, rota }) => {
+          {abasNav.map(({ key, label, icone, lib, rota }) => {
             const ativo = abaAtiva === key
             return (
               <TouchableOpacity
@@ -270,10 +303,14 @@ export function TelaHome({ navigation }: Props) {
                     setAbaAtiva(key as Aba)
                   }
                 }}
+                accessible={true}
+                accessibilityLabel={`Ir para ${label}`}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: ativo }}
               >
-                <Icone width={26} height={26} color={ativo ? CORES.secundaria : 'white'} />
+                <NavIcon icone={icone} lib={lib} size={24} color={ativo ? CORES.secundaria : 'white'} />
                 {ativo && <View style={estilos.pontoAtivo} />}
-                <Text style={[estilos.abaLabel, ativo && estilos.abaLabelAtivo]}>{label}</Text>
+                <AppText style={[estilos.abaLabel, ativo && estilos.abaLabelAtivo]}>{label}</AppText>
               </TouchableOpacity>
             )
           })}
@@ -296,12 +333,20 @@ export function TelaHome({ navigation }: Props) {
             <View style={estilos.drawerLogomarcaWrap}>
               <Logomarca1 width={140} height={70} color="white" />
             </View>
-            <Text style={estilos.drawerNome}>{estaLogado ? (apelido || 'Usuário') : 'Visitante'}</Text>
+            {estaLogado && (
+              <AvatarCircular
+                uri={proprietario?.fotoPerfil}
+                size={64}
+                borderWidth={2}
+                borderColor={CORES.secundaria}
+              />
+            )}
+            <AppText style={estilos.drawerNome}>{estaLogado ? (apelido || 'Usuário') : 'Visitante'}</AppText>
             {estaLogado
-              ? <Text style={estilos.drawerEmail}>{proprietario?.email}</Text>
+              ? <AppText style={estilos.drawerEmail}>{proprietario?.email}</AppText>
               : (
                 <TouchableOpacity onPress={() => navegarDaDrawer('Login')}>
-                  <Text style={estilos.drawerEmailLink}>Faça seu login</Text>
+                  <AppText style={estilos.drawerEmailLink}>Faça seu login</AppText>
                 </TouchableOpacity>
               )
             }
@@ -310,11 +355,18 @@ export function TelaHome({ navigation }: Props) {
           {/* Drawer items */}
           <View style={estilos.drawerItens}>
             {itensDrawer.map(({ label, Icone, onPress, vermelho }) => (
-              <TouchableOpacity key={label} style={estilos.drawerItem} onPress={onPress}>
-                <Icone width={24} height={24} color={vermelho ? CORES.erro : CORES.secundaria} />
-                <Text style={[estilos.drawerItemLabel, vermelho && estilos.drawerItemVermelho]}>
+              <TouchableOpacity
+                key={label}
+                style={estilos.drawerItem}
+                onPress={onPress}
+                accessible={true}
+                accessibilityLabel={label}
+                accessibilityRole="menuitem"
+              >
+                <Icone width={26} height={26} color={vermelho ? CORES.erro : CORES.secundaria} />
+                <AppText style={[estilos.drawerItemLabel, vermelho && estilos.drawerItemVermelho]}>
                   {label}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             ))}
           </View>
@@ -513,7 +565,7 @@ const estilos = StyleSheet.create({
     marginBottom: ESPACOS.sm,
   },
   textoBotaoCadastro: {
-    color: CORES.branco,
+    color: CORES.primaria,
     fontSize: FONTES.normal,
     fontWeight: '700',
   },
@@ -539,7 +591,7 @@ const estilos = StyleSheet.create({
     backgroundColor: CORES.secundaria,
   },
   abaLabel: {
-    fontSize: 9,
+    fontSize: 13,
     color: CORES.cinzaTexto,
   },
   abaLabelAtivo: {

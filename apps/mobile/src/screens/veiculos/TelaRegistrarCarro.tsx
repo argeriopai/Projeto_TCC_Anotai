@@ -1,14 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
   Alert, Modal, FlatList,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { cadastrarCarroApi, atualizarCarroApi, Carro, api } from '../../services/api'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
+import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
+import { AvatarCircular } from '../../components/AvatarCircular'
 
 interface Props { navigation: any; route: any }
 
@@ -41,25 +44,25 @@ function CampoDropdown({ label, obrigatorio, valor, placeholder, opcoes, erro, o
 
   return (
     <View style={estilos.campo}>
-      <Text style={estilos.label}>
-        {label}{obrigatorio && <Text style={estilos.obrig}> *</Text>}
-      </Text>
+      <AppText style={estilos.label}>
+        {label}{obrigatorio && <AppText style={estilos.obrig}> *</AppText>}
+      </AppText>
       <TouchableOpacity
         style={[estilos.dropdownBtn, erro ? estilos.inputErro : null]}
         onPress={() => setAberto(true)}
         activeOpacity={0.7}
       >
-        <Text style={[estilos.dropdownTexto, !valor && { color: CORES.cinzaTexto }]}>
+        <AppText style={[estilos.dropdownTexto, !valor && { color: CORES.placeholder }]}>
           {valor || placeholder}
-        </Text>
+        </AppText>
         <Ionicons name="chevron-down" size={18} color={CORES.cinzaTexto} />
       </TouchableOpacity>
-      {!!erro && <Text style={estilos.textoErro}>{erro}</Text>}
+      {!!erro && <AppText style={estilos.textoErro}>{erro}</AppText>}
 
       <Modal visible={aberto} transparent animationType="fade" onRequestClose={() => setAberto(false)}>
         <TouchableOpacity style={estilos.overlay} activeOpacity={1} onPress={() => setAberto(false)}>
           <View style={estilos.modalBox}>
-            <Text style={estilos.modalTitulo}>{label}</Text>
+            <AppText style={estilos.modalTitulo}>{label}</AppText>
             <FlatList
               data={opcoes}
               keyExtractor={item => item}
@@ -68,9 +71,9 @@ function CampoDropdown({ label, obrigatorio, valor, placeholder, opcoes, erro, o
                   style={[estilos.opcaoItem, valor === item && estilos.opcaoAtiva]}
                   onPress={() => { onChange(item); setAberto(false) }}
                 >
-                  <Text style={[estilos.opcaoTexto, valor === item && estilos.opcaoTextoAtivo]}>
+                  <AppText style={[estilos.opcaoTexto, valor === item && estilos.opcaoTextoAtivo]}>
                     {item}
-                  </Text>
+                  </AppText>
                   {valor === item && (
                     <Ionicons name="checkmark" size={18} color={CORES.secundaria} />
                   )}
@@ -86,7 +89,14 @@ function CampoDropdown({ label, obrigatorio, valor, placeholder, opcoes, erro, o
 
 export function TelaRegistrarCarro({ navigation, route }: Props) {
   const edit: Carro | undefined = route.params?.registroParaEditar
+  const { proprietario } = useAuth()
   const { requireAuth } = useAuthGuard()
+  const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
+
+  const marcaCustomRef = useRef<TextInput>(null)
+  const modeloRef      = useRef<TextInput>(null)
+  const placaRef       = useRef<TextInput>(null)
+  const corRef         = useRef<TextInput>(null)
 
   const [marcaSel,    setMarcaSel]    = useState(() => {
     const m = edit?.marca ?? ''
@@ -161,12 +171,30 @@ export function TelaRegistrarCarro({ navigation, route }: Props) {
   return (
     <SafeAreaView style={estilos.safe} edges={['top']}>
       <View style={estilos.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityLabel="Voltar"
+          accessibilityRole="button"
+        >
           <Ionicons name="arrow-back" size={24} color={CORES.branco} />
         </TouchableOpacity>
-        <Text style={estilos.headerTitulo}>{edit ? 'Editar Carro' : 'Registrar Carro'}</Text>
-        <View style={{ width: 24 }} />
+        <View style={estilos.headerDireita}>
+          <AvatarCircular uri={proprietario?.fotoPerfil} size={34} />
+          <View style={{ marginLeft: ESPACOS.xs }}>
+            <AppText style={estilos.headerOla}>Olá,</AppText>
+            <AppText style={estilos.headerNome}>{apelido}</AppText>
+          </View>
+        </View>
       </View>
+
+      {/* TÍTULO */}
+      <View style={estilos.tituloRow}>
+        <Ionicons name="car-outline" size={24} color={CORES.secundaria} />
+        <AppText style={estilos.tituloTexto}>{edit ? 'Editar Carro' : 'Registrar Carro'}</AppText>
+      </View>
+      <View style={estilos.divisoria} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={estilos.scroll} contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
@@ -182,35 +210,41 @@ export function TelaRegistrarCarro({ navigation, route }: Props) {
           />
           {marcaSel === 'Outra' && (
             <View style={estilos.campo}>
-              <Text style={estilos.label}>Informe a marca <Text style={estilos.obrig}>*</Text></Text>
+              <AppText style={estilos.label}>Informe a marca <AppText style={estilos.obrig}>*</AppText></AppText>
               <TextInput
+                ref={marcaCustomRef}
                 style={[estilos.input, erros.marca ? estilos.inputErro : null]}
                 value={marcaCustom}
                 onChangeText={t => { setMarcaCustom(t); limparErro('marca') }}
                 placeholder="Digite a marca do veículo"
-                placeholderTextColor={CORES.cinzaTexto}
+                placeholderTextColor={CORES.placeholder}
                 autoCapitalize="words"
                 autoCorrect={false}
+                returnKeyType="next"
                 blurOnSubmit={false}
+                onSubmitEditing={() => modeloRef.current?.focus()}
                 autoFocus
               />
-              {!!erros.marca && <Text style={estilos.textoErro}>{erros.marca}</Text>}
+              {!!erros.marca && <AppText style={estilos.textoErro}>{erros.marca}</AppText>}
             </View>
           )}
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Modelo <Text style={estilos.obrig}>*</Text></Text>
+            <AppText style={estilos.label}>Modelo <AppText style={estilos.obrig}>*</AppText></AppText>
             <TextInput
+              ref={modeloRef}
               style={[estilos.input, erros.modelo ? estilos.inputErro : null]}
               value={modelo}
               onChangeText={t => { setModelo(t); limparErro('modelo') }}
               placeholder="Ex: Corolla"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
+              returnKeyType="next"
               blurOnSubmit={false}
+              onSubmitEditing={() => placaRef.current?.focus()}
             />
-            {!!erros.modelo && <Text style={estilos.textoErro}>{erros.modelo}</Text>}
+            {!!erros.modelo && <AppText style={estilos.textoErro}>{erros.modelo}</AppText>}
           </View>
 
           <CampoDropdown
@@ -222,31 +256,36 @@ export function TelaRegistrarCarro({ navigation, route }: Props) {
           />
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Placa <Text style={estilos.obrig}>*</Text></Text>
+            <AppText style={estilos.label}>Placa <AppText style={estilos.obrig}>*</AppText></AppText>
             <TextInput
+              ref={placaRef}
               style={[estilos.input, erros.placa ? estilos.inputErro : null]}
               value={placa}
               onChangeText={t => { setPlaca(t.toUpperCase()); limparErro('placa') }}
               placeholder="Ex: ABC-1234"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               autoCapitalize="characters"
               autoCorrect={false}
+              returnKeyType="next"
               blurOnSubmit={false}
+              onSubmitEditing={() => corRef.current?.focus()}
             />
-            {!!erros.placa && <Text style={estilos.textoErro}>{erros.placa}</Text>}
+            {!!erros.placa && <AppText style={estilos.textoErro}>{erros.placa}</AppText>}
           </View>
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Cor</Text>
+            <AppText style={estilos.label}>Cor</AppText>
             <TextInput
+              ref={corRef}
               style={estilos.input}
               value={cor}
               onChangeText={setCor}
               placeholder="Ex: Prata"
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
-              blurOnSubmit={false}
+              returnKeyType="done"
+              blurOnSubmit={true}
             />
           </View>
 
@@ -286,10 +325,14 @@ export function TelaRegistrarCarro({ navigation, route }: Props) {
             style={[estilos.botao, carregando && { opacity: 0.6 }]}
             onPress={handleSalvar}
             disabled={carregando}
+            accessible={true}
+            accessibilityLabel={edit ? 'Salvar alterações do carro' : 'Salvar carro'}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: carregando }}
           >
             {carregando
               ? <ActivityIndicator color={CORES.branco} />
-              : <Text style={estilos.textoBotao}>{edit ? 'Salvar Alterações' : 'Salvar'}</Text>
+              : <AppText style={estilos.textoBotao}>{edit ? 'Salvar Alterações' : 'Salvar'}</AppText>
             }
           </TouchableOpacity>
         </ScrollView>
@@ -309,6 +352,20 @@ const estilos = StyleSheet.create({
     paddingVertical: ESPACOS.md,
   },
   headerTitulo:    { color: CORES.branco, fontSize: FONTES.media, fontWeight: '700' },
+  headerCentro:    { flexDirection: 'row', alignItems: 'center' },
+  headerDireita:   { flexDirection: 'row', alignItems: 'center' },
+  headerOla:       { color: CORES.cinzaTexto, fontSize: FONTES.pequena },
+  headerNome:      { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
+  tituloRow: {
+    backgroundColor: CORES.branco,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ESPACOS.xs,
+    paddingHorizontal: ESPACOS.md,
+    paddingVertical: ESPACOS.sm,
+  },
+  tituloTexto: { fontSize: FONTES.subtitulo, fontWeight: '700', color: CORES.pretinho },
+  divisoria:   { height: 2, backgroundColor: CORES.secundaria },
   scroll:          { flex: 1, backgroundColor: CORES.cinzaClaro },
   conteudo:        { padding: ESPACOS.lg, paddingBottom: ESPACOS.xxl },
   campo:           { marginBottom: ESPACOS.md },

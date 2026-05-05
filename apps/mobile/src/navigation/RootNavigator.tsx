@@ -17,6 +17,7 @@ import { TelaVeiculos }            from '../screens/relatorios/TelaVeiculos'
 import { TelaContato }             from '../screens/TelaContato'
 import { TelaMeuPerfil }          from '../screens/TelaMeuPerfil'
 import { TelaGaleria }            from '../screens/TelaGaleria'
+import { TelaAcessibilidade }    from '../screens/TelaAcessibilidade'
 
 const Stack = createNativeStackNavigator()
 
@@ -43,6 +44,7 @@ export function RootNavigator() {
         <Stack.Screen name="Contato"              component={TelaContato}             options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="MeuPerfil"            component={TelaMeuPerfil}           options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Galeria"              component={TelaGaleria}             options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Acessibilidade"       component={TelaAcessibilidade}      options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   )

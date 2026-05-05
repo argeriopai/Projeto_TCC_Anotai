@@ -1,16 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
   Alert, TextInput as TextInputType,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
-import LogomarcaIcone1 from '../../assets/icons/LOGOMARCA_ICONE1.svg'
-import IconeUsuario from '../../assets/icons/ICONE_MENU_LATERAL_USUARIO.svg'
-import IconeInicio from '../../assets/icons/ICONE_MENU_LATERAL_INICIO.svg'
+import Logomarca1 from '../../assets/icons/LOGOMARCA_1.svg'
 
 interface Props {
   navigation: any
@@ -68,11 +67,17 @@ export function TelaLogin({ navigation }: Props) {
       {/* HEADER */}
       <View style={estilos.header}>
         <View style={estilos.headerEsquerda}>
-          <LogomarcaIcone1 width={38} height={38} color="white" />
-          <Text style={estilos.headerTitulo}>Bem vindo!</Text>
+          <Logomarca1 width={70} height={35} color="white" />
+          <AppText style={estilos.headerTitulo}>Bem vindo!</AppText>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <IconeInicio width={26} height={26} color="white" />
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Home')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityLabel="Ir para Início"
+          accessibilityRole="button"
+        >
+          <Ionicons name="home-outline" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -82,11 +87,11 @@ export function TelaLogin({ navigation }: Props) {
 
           {/* Título da página */}
           <View style={estilos.tituloRow}>
-            <IconeUsuario width={26} height={26} color={CORES.secundaria} />
-            <Text style={estilos.tituloPagina}>Proprietário / Login</Text>
+            <Ionicons name="person-outline" size={22} color={CORES.secundaria} />
+            <AppText style={estilos.tituloPagina}>Proprietário / Login</AppText>
           </View>
           <View style={estilos.divisoria} />
-          <Text style={estilos.subtitulo}>Acesse sua conta para continuar</Text>
+          <AppText style={estilos.subtitulo}>Acesse sua conta para continuar</AppText>
 
           {/* Campo E-mail */}
           <View style={estilos.campoWrapper}>
@@ -97,7 +102,7 @@ export function TelaLogin({ navigation }: Props) {
                 value={email}
                 onChangeText={(t) => { setEmail(t); setErros(e => ({ ...e, email: undefined })) }}
                 placeholder="seu@email.com"
-                placeholderTextColor={CORES.cinzaTexto}
+                placeholderTextColor={CORES.placeholder}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -107,7 +112,7 @@ export function TelaLogin({ navigation }: Props) {
                 accessibilityLabel="Campo de e-mail"
               />
             </View>
-            {erros.email && <Text style={estilos.textoErro}>{erros.email}</Text>}
+            {erros.email && <AppText style={estilos.textoErro}>{erros.email}</AppText>}
           </View>
 
           {/* Campo Senha */}
@@ -120,7 +125,7 @@ export function TelaLogin({ navigation }: Props) {
                 value={senha}
                 onChangeText={(t) => { setSenha(t); setErros(e => ({ ...e, senha: undefined })) }}
                 placeholder="sua senha"
-                placeholderTextColor={CORES.cinzaTexto}
+                placeholderTextColor={CORES.placeholder}
                 autoCorrect={false}
                 secureTextEntry={!mostrarSenha}
                 blurOnSubmit={false}
@@ -132,12 +137,17 @@ export function TelaLogin({ navigation }: Props) {
                 <Ionicons name={mostrarSenha ? 'eye-off-outline' : 'eye-outline'} size={20} color={CORES.cinzaTexto} />
               </TouchableOpacity>
             </View>
-            {erros.senha && <Text style={estilos.textoErro}>{erros.senha}</Text>}
+            {erros.senha && <AppText style={estilos.textoErro}>{erros.senha}</AppText>}
           </View>
 
           {/* Esqueci a senha */}
-          <TouchableOpacity style={estilos.linkEsqueceu}>
-            <Text style={estilos.textoLinkEsqueceu}>Esqueci minha senha</Text>
+          <TouchableOpacity
+            style={estilos.linkEsqueceu}
+            accessible={true}
+            accessibilityLabel="Esqueci minha senha"
+            accessibilityRole="button"
+          >
+            <AppText style={estilos.textoLinkEsqueceu}>Esqueci minha senha</AppText>
           </TouchableOpacity>
 
           {/* Botão Entrar */}
@@ -145,20 +155,28 @@ export function TelaLogin({ navigation }: Props) {
             style={[estilos.botaoEntrar, carregando && estilos.botaoDesabilitado]}
             onPress={handleLogin}
             disabled={carregando}
+            accessible={true}
+            accessibilityLabel="Entrar na conta"
             accessibilityRole="button"
+            accessibilityState={{ disabled: carregando }}
           >
             {carregando ? (
               <ActivityIndicator color={CORES.branco} size="small" />
             ) : (
-              <Text style={estilos.textoBotao}>Entrar</Text>
+              <AppText style={estilos.textoBotao}>Entrar</AppText>
             )}
           </TouchableOpacity>
 
           {/* Rodapé */}
           <View style={estilos.rodape}>
-            <Text style={estilos.textoRodape}>Ainda não tem conta? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Cadastro')}>
-              <Text style={estilos.linkCadastro}>Criar conta grátis</Text>
+            <AppText style={estilos.textoRodape}>Ainda não tem conta? </AppText>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Cadastro')}
+              accessible={true}
+              accessibilityLabel="Criar conta grátis"
+              accessibilityRole="button"
+            >
+              <AppText style={estilos.linkCadastro}>Criar conta grátis</AppText>
             </TouchableOpacity>
           </View>
 
@@ -220,7 +238,7 @@ const estilos = StyleSheet.create({
   },
   subtitulo: {
     fontSize: FONTES.normal,
-    color: CORES.cinzaTexto,
+    color: CORES.textoSecundario,
     marginBottom: ESPACOS.lg,
   },
   campoWrapper: {
@@ -258,7 +276,7 @@ const estilos = StyleSheet.create({
   },
   textoLinkEsqueceu: {
     fontSize: FONTES.normal,
-    color: CORES.cinzaTexto,
+    color: CORES.textoSecundario,
   },
   botaoEntrar: {
     backgroundColor: CORES.primaria,
@@ -283,7 +301,7 @@ const estilos = StyleSheet.create({
   },
   textoRodape: {
     fontSize: FONTES.normal,
-    color: CORES.cinzaTexto,
+    color: CORES.textoSecundario,
   },
   linkCadastro: {
     fontSize: FONTES.normal,

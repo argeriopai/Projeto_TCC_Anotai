@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react'
 import {
-  View, Text, TouchableOpacity, StyleSheet,
+  View, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert, Switch,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
@@ -12,7 +13,7 @@ import { useVeiculo } from '../../contexts/VeiculoContext'
 import { listarNotificacoesApi, excluirNotificacaoApi, atualizarNotificacaoApi, Notificacao } from '../../services/api'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { BottomNavBar } from '../../components/BottomNavBar'
-import IconeNavNotificacao from '../../assets/icons/ICONE_RELATORIO_NOTIFICAÇÃO.svg'
+import { AvatarCircular } from '../../components/AvatarCircular'
 
 interface Props { navigation: any }
 
@@ -118,30 +119,30 @@ export function TelaNotificacoes({ navigation }: Props) {
       {/* HEADER */}
       <View style={estilos.header}>
         <View style={estilos.headerEsquerda}>
-          <Ionicons name="person-circle-outline" size={34} color={CORES.branco} />
+          <AvatarCircular uri={proprietario?.fotoPerfil} size={34} />
           <View style={{ marginLeft: ESPACOS.xs }}>
-            <Text style={estilos.headerOla}>Olá,</Text>
-            <Text style={estilos.headerNome}>{apelido}</Text>
+            <AppText style={estilos.headerOla}>Olá,</AppText>
+            <AppText style={estilos.headerNome}>{apelido}</AppText>
           </View>
         </View>
         <View style={estilos.headerAcoes}>
-          <TouchableOpacity style={estilos.btnAcao} onPress={handleEditar}>
+          <TouchableOpacity style={estilos.btnAcao} onPress={handleEditar} accessible accessibilityLabel="Editar revisão selecionada" accessibilityRole="button">
             <View style={[estilos.btnCirculo, { backgroundColor: CORES.secundaria }]}>
               <Ionicons name="pencil" size={15} color={CORES.branco} />
             </View>
-            <Text style={estilos.btnLabel}>Editar</Text>
+            <AppText style={estilos.btnLabel}>Editar</AppText>
           </TouchableOpacity>
-          <TouchableOpacity style={estilos.btnAcao} onPress={handleNovo}>
+          <TouchableOpacity style={estilos.btnAcao} onPress={handleNovo} accessible accessibilityLabel="Nova revisão" accessibilityRole="button">
             <View style={[estilos.btnCirculo, { backgroundColor: CORES.secundaria }]}>
               <Ionicons name="add" size={20} color={CORES.branco} />
             </View>
-            <Text style={estilos.btnLabel}>Novo</Text>
+            <AppText style={estilos.btnLabel}>Novo</AppText>
           </TouchableOpacity>
-          <TouchableOpacity style={estilos.btnAcao} onPress={handleExcluir}>
+          <TouchableOpacity style={estilos.btnAcao} onPress={handleExcluir} accessible accessibilityLabel="Excluir revisão selecionada" accessibilityRole="button">
             <View style={[estilos.btnCirculo, { backgroundColor: CORES.erro }]}>
               <Ionicons name="trash-outline" size={15} color={CORES.branco} />
             </View>
-            <Text style={estilos.btnLabel}>Excluir</Text>
+            <AppText style={estilos.btnLabel}>Excluir</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -149,11 +150,11 @@ export function TelaNotificacoes({ navigation }: Props) {
       {/* TÍTULO */}
       <View style={estilos.tituloRow}>
         <View style={estilos.tituloEsquerda}>
-          <IconeNavNotificacao width={22} height={22} color={CORES.secundaria} />
-          <Text style={estilos.tituloTexto}>Revisões</Text>
+          <Ionicons name="calendar-outline" size={24} color={CORES.secundaria} />
+          <AppText style={estilos.tituloTexto}>Revisões</AppText>
         </View>
         {veiculoLabel && (
-          <Text style={estilos.veiculoLabel} numberOfLines={1}>{veiculoLabel}</Text>
+          <AppText style={estilos.veiculoLabel} numberOfLines={1}>{veiculoLabel}</AppText>
         )}
       </View>
       <View style={estilos.divisoria} />
@@ -162,12 +163,12 @@ export function TelaNotificacoes({ navigation }: Props) {
       {!veiculoAtivo ? (
         <View style={estilos.centralizador}>
           <Ionicons name="car-outline" size={56} color={CORES.cinzaTexto} />
-          <Text style={estilos.semDadosTitulo}>Nenhum veículo selecionado</Text>
-          <Text style={estilos.semDadosSub}>
+          <AppText style={estilos.semDadosTitulo}>Nenhum veículo selecionado</AppText>
+          <AppText style={estilos.semDadosSub}>
             Acesse Veículo e selecione um veículo para visualizar seus registros
-          </Text>
+          </AppText>
           <TouchableOpacity style={estilos.btnAdicionar} onPress={() => navigation.navigate('Veiculos')}>
-            <Text style={estilos.btnAdicionarTexto}>Selecionar Veículo</Text>
+            <AppText style={estilos.btnAdicionarTexto}>Selecionar Veículo</AppText>
           </TouchableOpacity>
         </View>
       ) : carregando ? (
@@ -177,9 +178,9 @@ export function TelaNotificacoes({ navigation }: Props) {
       ) : lista.length === 0 ? (
         <View style={estilos.centralizador}>
           <Ionicons name="notifications-off-outline" size={52} color={CORES.cinzaTexto} />
-          <Text style={estilos.semDados}>Nenhuma revisão encontrada</Text>
+          <AppText style={estilos.semDados}>Nenhuma revisão encontrada</AppText>
           <TouchableOpacity style={estilos.btnAdicionar} onPress={handleNovo}>
-            <Text style={estilos.btnAdicionarTexto}>Adicionar</Text>
+            <AppText style={estilos.btnAdicionarTexto}>Adicionar</AppText>
           </TouchableOpacity>
         </View>
       ) : (
@@ -196,12 +197,16 @@ export function TelaNotificacoes({ navigation }: Props) {
                 style={[estilos.card, cardSelecionado === item.id && estilos.cardAtivo]}
                 onPress={() => setCardSelecionado(p => p === item.id ? null : item.id)}
                 activeOpacity={0.85}
+                accessible
+                accessibilityLabel={`Revisão ${item.tipo}, ${item.data}${item.kilometragem ? `, Km ${item.kilometragem}` : ''}. ${item.ativo !== false ? 'Ativa' : 'Inativa'}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: cardSelecionado === item.id }}
               >
                 {/* Linha principal: data + título + toggle */}
                 <View style={estilos.cardTopRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={estilos.cardData}>{item.data}</Text>
-                    <Text style={estilos.cardTitulo} numberOfLines={1}>{item.tipo}</Text>
+                    <AppText style={estilos.cardData}>{item.data}</AppText>
+                    <AppText style={estilos.cardTitulo} numberOfLines={1}>{item.tipo}</AppText>
                   </View>
                   <Switch
                     value={ativo}
@@ -214,19 +219,19 @@ export function TelaNotificacoes({ navigation }: Props) {
                 {/* Categoria + Km */}
                 <View style={estilos.cardTagRow}>
                   <View style={[estilos.cardTag, { backgroundColor: ativo ? '#E8FAF0' : CORES.cinzaMedio }]}>
-                    <Text style={[estilos.cardTagTexto, { color: ativo ? CORES.secundariaEscuro : CORES.cinzaTexto }]}>
+                    <AppText style={[estilos.cardTagTexto, { color: ativo ? CORES.secundariaEscuro : CORES.cinzaTexto }]}>
                       {categoriaTipo(item.tipo)}
-                    </Text>
+                    </AppText>
                   </View>
                   {item.kilometragem && (
-                    <Text style={estilos.cardMeta}>Km {item.kilometragem}</Text>
+                    <AppText style={estilos.cardMeta}>Km {item.kilometragem}</AppText>
                   )}
                 </View>
 
                 <View style={estilos.cardDivisor} />
 
                 {/* Mensagem */}
-                <Text style={estilos.cardMensagem}>{item.mensagem}</Text>
+                <AppText style={estilos.cardMensagem}>{item.mensagem}</AppText>
 
                 <Ionicons name="chevron-forward" size={14} color={CORES.cinzaTexto} style={estilos.cardChevron} />
               </TouchableOpacity>
@@ -274,8 +279,8 @@ const estilos = StyleSheet.create({
 
   centralizador:     { flex: 1, backgroundColor: CORES.cinzaClaro, justifyContent: 'center', alignItems: 'center', gap: ESPACOS.md, paddingHorizontal: ESPACOS.xl },
   semDadosTitulo:    { fontSize: FONTES.media, color: CORES.pretinho, fontWeight: '700', textAlign: 'center' },
-  semDadosSub:       { fontSize: FONTES.pequena, color: CORES.cinzaTexto, textAlign: 'center', lineHeight: 18 },
-  semDados:          { fontSize: FONTES.normal, color: CORES.cinzaTexto, fontWeight: '500' },
+  semDadosSub:       { fontSize: FONTES.pequena, color: CORES.textoSecundario, textAlign: 'center', lineHeight: 18 },
+  semDados:          { fontSize: FONTES.normal, color: CORES.textoSecundario, fontWeight: '500' },
   btnAdicionar:      { backgroundColor: CORES.secundaria, borderRadius: 20, paddingHorizontal: ESPACOS.lg, paddingVertical: ESPACOS.sm },
   btnAdicionarTexto: { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
 
@@ -297,13 +302,13 @@ const estilos = StyleSheet.create({
   },
   cardAtivo:    { borderColor: CORES.secundaria, shadowOpacity: 0.15 },
   cardTopRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardData:     { fontSize: FONTES.pequena, color: CORES.cinzaTexto },
+  cardData:     { fontSize: FONTES.pequena, color: CORES.textoSecundario },
   cardTitulo:   { fontSize: FONTES.normal, fontWeight: '700', color: CORES.pretinho, marginTop: 2 },
   cardTagRow:   { flexDirection: 'row', alignItems: 'center', gap: ESPACOS.sm, marginTop: ESPACOS.xs },
   cardTag:      { borderRadius: 10, paddingHorizontal: ESPACOS.sm, paddingVertical: 2 },
   cardTagTexto: { fontSize: FONTES.pequena, fontWeight: '600' },
   cardMeta:     { fontSize: FONTES.pequena, color: CORES.texto },
   cardDivisor:  { height: 1, backgroundColor: CORES.borda, marginVertical: ESPACOS.sm },
-  cardMensagem: { fontSize: FONTES.pequena, color: CORES.cinzaTexto, lineHeight: 18 },
+  cardMensagem: { fontSize: FONTES.pequena, color: CORES.textoSecundario, lineHeight: 18 },
   cardChevron:  { position: 'absolute', right: ESPACOS.sm, top: ESPACOS.md },
 })

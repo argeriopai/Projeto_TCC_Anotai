@@ -4,16 +4,11 @@ import {
   ScrollView, Image, Alert, Modal, ActivityIndicator, Platform,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import * as ImagePicker from 'expo-image-picker'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
-import {
-  FotoRegistro, buscarFotos, salvarFotos, copiarFotoLocal,
-} from '../utils/fotosStorage'
+import { FotoRegistro, buscarFotos, salvarFotos } from '../utils/fotosStorage'
 import { FotosModal } from './FotosModal'
 
 type SecaoKey = 'fotosServico' | 'fotosNotaFiscal' | 'fotosGarantia'
-
-const MAX = 5
 
 const SECOES: { key: SecaoKey; label: string; icone: string }[] = [
   { key: 'fotosServico',    label: 'Foto do Serviço / Peça', icone: 'camera-outline'       },
@@ -59,53 +54,6 @@ export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro,
     await salvarFotos(novoRegistro)
   }
 
-  async function pedirPermissao(tipo: 'camera' | 'galeria'): Promise<boolean> {
-    if (tipo === 'camera') {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync()
-      return status === 'granted'
-    }
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    return status === 'granted'
-  }
-
-  async function selecionarFoto(secao: SecaoKey, origem: 'camera' | 'galeria') {
-    const ok = await pedirPermissao(origem)
-    if (!ok) {
-      Alert.alert(
-        'Permissão negada',
-        `Não foi possível acessar ${origem === 'camera' ? 'a câmera' : 'a galeria'}. Ative nas configurações do seu celular.`,
-        [{ text: 'OK' }]
-      )
-      return
-    }
-
-    const res = origem === 'camera'
-      ? await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true, aspect: [4, 3] })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: true, aspect: [4, 3] })
-
-    if (res.canceled || !res.assets?.[0]?.uri) return
-
-    const uri = await copiarFotoLocal(res.assets[0].uri)
-    const novo = { ...registro, [secao]: [...registro[secao], uri] }
-    await atualizar(novo)
-  }
-
-  function mostrarOpcoes(secao: SecaoKey) {
-    if (registro[secao].length >= MAX) {
-      Alert.alert('Limite atingido', `Máximo de ${MAX} fotos por seção.`)
-      return
-    }
-    Alert.alert(
-      'Adicionar Foto',
-      'Escolha a origem:',
-      [
-        { text: 'Tirar Foto',          onPress: () => selecionarFoto(secao, 'camera')  },
-        { text: 'Escolher da Galeria', onPress: () => selecionarFoto(secao, 'galeria') },
-        { text: 'Cancelar', style: 'cancel' },
-      ]
-    )
-  }
-
   function removerFoto(secao: SecaoKey, indice: number) {
     Alert.alert(
       'Excluir foto',
@@ -137,11 +85,6 @@ export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro,
     else if (indice >= novas.length) setModalIndice(novas.length - 1)
   }
 
-  function handleAdicionarModal() {
-    setModalAberto(false)
-    setTimeout(() => mostrarOpcoes(modalSecao), 300)
-  }
-
   return (
     <Modal visible={visivel} animationType="slide" onRequestClose={onFechar}>
       <View style={es.container}>
@@ -167,11 +110,13 @@ export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro,
                   <View style={es.secaoHeader}>
                     <Ionicons name={icone as any} size={16} color={CORES.secundaria} />
                     <Text style={es.secaoLabel}>{label}</Text>
-                    <Text style={es.contador}>{lista.length}/{MAX}</Text>
+                    <Text style={es.contador}>{lista.length}/5</Text>
                   </View>
 
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={es.fotosScroll}>
-                    {lista.map((uri, idx) => (
+                    {lista.length === 0 ? (
+                      <Text style={es.semFotos}>Sem fotos</Text>
+                    ) : lista.map((uri, idx) => (
                       <View key={idx} style={es.thumbWrap}>
                         <TouchableOpacity onPress={() => abrirModal(key, idx)} activeOpacity={0.85}>
                           <Image source={{ uri }} style={es.thumb} />
@@ -181,13 +126,6 @@ export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro,
                         </TouchableOpacity>
                       </View>
                     ))}
-
-                    {lista.length < MAX && (
-                      <TouchableOpacity style={es.btnAdicionar} onPress={() => mostrarOpcoes(key)} activeOpacity={0.7}>
-                        <Ionicons name="add-circle-outline" size={26} color={CORES.secundaria} />
-                        <Text style={es.btnAdicionarTexto}>Adicionar{'\n'}Foto</Text>
-                      </TouchableOpacity>
-                    )}
                   </ScrollView>
                 </View>
               )
@@ -201,7 +139,6 @@ export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro,
           indiceInicial={modalIndice}
           categoriaLabel={SECOES.find(s => s.key === modalSecao)?.label ?? ''}
           onFechar={() => setModalAberto(false)}
-          onAdicionar={handleAdicionarModal}
           onExcluir={handleExcluirModal}
         />
       </View>
@@ -259,7 +196,7 @@ const es = StyleSheet.create({
   },
   contador: {
     fontSize: FONTES.pequena,
-    color: CORES.cinzaTexto,
+    color: CORES.textoSecundario,
   },
   fotosScroll: {
     gap: ESPACOS.sm,
@@ -285,22 +222,10 @@ const es = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  btnAdicionar: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: CORES.secundaria,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 2,
-  },
-  btnAdicionarTexto: {
-    fontSize: 9,
-    color: CORES.secundaria,
-    fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 12,
+  semFotos: {
+    fontSize: FONTES.pequena,
+    color: CORES.textoSecundario,
+    fontStyle: 'italic',
+    paddingVertical: ESPACOS.sm,
   },
 })

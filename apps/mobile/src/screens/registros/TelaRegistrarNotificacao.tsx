@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { listarCarrosApi, listarMotosApi, registrarNotificacaoApi, editarNotificacaoApi, Carro, Moto, Notificacao } from '../../services/api'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
+import { useAuth } from '../../contexts/AuthContext'
+import { AvatarCircular } from '../../components/AvatarCircular'
 import { useVoiceInput } from '../../hooks/useVoiceInput'
 import { BotaoMic, IndicadorGravando } from '../../components/BotaoMic'
 import { CampoData, formatarData } from '../../components/CampoData'
@@ -34,8 +37,10 @@ const TIPOS_REVISAO = [
 
 export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   const edit: Notificacao | undefined = route.params?.registroParaEditar
+  const { proprietario } = useAuth()
   const { veiculoAtivo } = useVeiculo()
   const { requireAuth } = useAuthGuard()
+  const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
 
   const [tipo,       setTipo]       = useState(edit?.tipo ?? '')
   const [mensagem,   setMensagem]   = useState(edit?.mensagem ?? '')
@@ -137,39 +142,61 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   return (
     <SafeAreaView style={estilos.safe} edges={['top']}>
       <View style={estilos.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityLabel="Voltar"
+          accessibilityRole="button"
+        >
           <Ionicons name="arrow-back" size={24} color={CORES.branco} />
         </TouchableOpacity>
-        <Text style={estilos.headerTitulo}>{edit ? 'Editar Revisão' : 'Registrar Revisão'}</Text>
-        <View style={{ width: 24 }} />
+        <View style={estilos.headerDireita}>
+          <AvatarCircular uri={proprietario?.fotoPerfil} size={34} />
+          <View style={{ marginLeft: ESPACOS.xs }}>
+            <AppText style={estilos.headerOla}>Olá,</AppText>
+            <AppText style={estilos.headerNome}>{apelido}</AppText>
+          </View>
+        </View>
       </View>
+
+      {/* TÍTULO */}
+      <View style={estilos.tituloRow}>
+        <Ionicons name="calendar-outline" size={24} color={CORES.secundaria} />
+        <AppText style={estilos.tituloTexto}>{edit ? 'Editar Revisão' : 'Registrar Revisão'}</AppText>
+      </View>
+      <View style={estilos.divisoria} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={estilos.scroll} contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
 
           {/* Tipo de notificação */}
-          <Text style={estilos.label}>Tipo <Text style={estilos.obrig}>*</Text></Text>
+          <AppText style={estilos.label}>Tipo <AppText style={estilos.obrig}>*</AppText></AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.chipScroll}>
             {TIPOS_REVISAO.map(t => (
               <TouchableOpacity
                 key={t}
                 style={[estilos.chip, tipo === t && estilos.chipAtivo]}
                 onPress={() => { setTipo(t); limparErro('tipo') }}
+                accessible={true}
+                accessibilityLabel={`Tipo de revisão: ${t}`}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: tipo === t }}
               >
-                <Text style={[estilos.chipTexto, tipo === t && estilos.chipTextoAtivo]}>{t}</Text>
+                <AppText style={[estilos.chipTexto, tipo === t && estilos.chipTextoAtivo]}>{t}</AppText>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          {!!erros.tipo && <Text style={estilos.textoErro}>{erros.tipo}</Text>}
+          {!!erros.tipo && <AppText style={estilos.textoErro}>{erros.tipo}</AppText>}
 
           <View style={{ height: ESPACOS.md }} />
 
           {/* Veículo (opcional) */}
-          <Text style={estilos.label}>Veículo <Text style={estilos.opcional}>(opcional)</Text></Text>
+          <AppText style={estilos.label}>Veículo <AppText style={estilos.opcional}>(opcional)</AppText></AppText>
           {carregandoVeiculos ? (
             <ActivityIndicator color={CORES.secundaria} style={{ marginVertical: ESPACOS.sm }} />
           ) : veiculos.length === 0 ? (
-            <Text style={estilos.semVeiculo}>Nenhum veículo cadastrado.</Text>
+            <AppText style={estilos.semVeiculo}>Nenhum veículo cadastrado.</AppText>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.chipScroll}>
               {veiculos.map(v => (
@@ -178,9 +205,9 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
                   style={[estilos.chip, veiculoId === v.id && estilos.chipAtivo]}
                   onPress={() => setVeiculoId(prev => prev === v.id ? null : v.id)}
                 >
-                  <Text style={[estilos.chipTexto, veiculoId === v.id && estilos.chipTextoAtivo]} numberOfLines={1}>
+                  <AppText style={[estilos.chipTexto, veiculoId === v.id && estilos.chipTextoAtivo]} numberOfLines={1}>
                     {v.label}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -191,7 +218,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
           {/* Mensagem com microfone */}
           <View style={estilos.campo}>
             <View style={estilos.labelRow}>
-              <Text style={estilos.label}>Mensagem <Text style={estilos.obrig}>*</Text></Text>
+              <AppText style={estilos.label}>Mensagem <AppText style={estilos.obrig}>*</AppText></AppText>
               <BotaoMic gravando={isRecording && gravandoMensagem} onPress={toggleMic} />
             </View>
             {isRecording && gravandoMensagem && <IndicadorGravando />}
@@ -204,12 +231,13 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
               value={mensagem}
               onChangeText={t => { setMensagem(t); limparErro('mensagem') }}
               placeholder="Descreva o lembrete..."
-              placeholderTextColor={CORES.cinzaTexto}
+              placeholderTextColor={CORES.placeholder}
               multiline
               autoCapitalize="sentences"
+              returnKeyType="done"
               blurOnSubmit={false}
             />
-            {!!erros.mensagem && <Text style={estilos.textoErro}>{erros.mensagem}</Text>}
+            {!!erros.mensagem && <AppText style={estilos.textoErro}>{erros.mensagem}</AppText>}
           </View>
 
           {/* Data do lembrete — pode ser futura */}
@@ -225,10 +253,14 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
             style={[estilos.botao, carregando && { opacity: 0.6 }]}
             onPress={handleSalvar}
             disabled={carregando}
+            accessible={true}
+            accessibilityLabel={edit ? 'Salvar alterações da revisão' : 'Salvar revisão'}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: carregando }}
           >
             {carregando
               ? <ActivityIndicator color={CORES.branco} />
-              : <Text style={estilos.textoBotao}>{edit ? 'Salvar Alterações' : 'Salvar'}</Text>
+              : <AppText style={estilos.textoBotao}>{edit ? 'Salvar Alterações' : 'Salvar'}</AppText>
             }
           </TouchableOpacity>
         </ScrollView>
@@ -248,14 +280,28 @@ const estilos = StyleSheet.create({
     paddingVertical: ESPACOS.md,
   },
   headerTitulo:  { color: CORES.branco, fontSize: FONTES.media, fontWeight: '700' },
+  headerCentro:  { flexDirection: 'row', alignItems: 'center' },
+  headerDireita: { flexDirection: 'row', alignItems: 'center' },
+  headerOla:     { color: CORES.cinzaTexto, fontSize: FONTES.pequena },
+  headerNome:    { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
+  tituloRow: {
+    backgroundColor: CORES.branco,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ESPACOS.xs,
+    paddingHorizontal: ESPACOS.md,
+    paddingVertical: ESPACOS.sm,
+  },
+  tituloTexto: { fontSize: FONTES.subtitulo, fontWeight: '700', color: CORES.pretinho },
+  divisoria:   { height: 2, backgroundColor: CORES.secundaria },
   scroll:        { flex: 1, backgroundColor: CORES.cinzaClaro },
   conteudo:      { padding: ESPACOS.lg, paddingBottom: ESPACOS.xxl },
   campo:         { marginBottom: ESPACOS.md },
   labelRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: ESPACOS.xs },
   label:         { fontSize: FONTES.normal, fontWeight: '600', color: CORES.texto },
   obrig:         { color: CORES.erro, fontWeight: '700' },
-  opcional:      { color: CORES.cinzaTexto, fontWeight: '400' },
-  semVeiculo:    { fontSize: FONTES.pequena, color: CORES.cinzaTexto, marginBottom: ESPACOS.sm },
+  opcional:      { color: CORES.textoSecundario, fontWeight: '400' },
+  semVeiculo:    { fontSize: FONTES.pequena, color: CORES.textoSecundario, marginBottom: ESPACOS.sm },
   input: {
     backgroundColor: CORES.branco,
     borderRadius: 10,

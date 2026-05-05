@@ -1,11 +1,14 @@
 import React, { useState } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, KeyboardAvoidingView, Platform,
+  View, TextInput, TouchableOpacity, StyleSheet,
+  ScrollView, Alert, KeyboardAvoidingView, Platform, Image,
 } from 'react-native'
+import { AppText } from '../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '../contexts/AuthContext'
+import { AvatarCircular } from '../components/AvatarCircular'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { mascaraTelefone } from '../utils/mascaras'
 
@@ -41,7 +44,7 @@ function CampoInfo({ label, icone, valor, editavel, onChange, keyboardType, auto
         <Ionicons name={icone as any} size={17} color={CORES.secundaria} />
       </View>
       <View style={estilos.campoConteudo}>
-        <Text style={estilos.campoLabel}>{label}</Text>
+        <AppText style={estilos.campoLabel}>{label}</AppText>
         {editavel ? (
           <>
             <TextInput
@@ -54,11 +57,13 @@ function CampoInfo({ label, icone, valor, editavel, onChange, keyboardType, auto
               onBlur={onBlur}
               onFocus={onFocus}
               blurOnSubmit={false}
+              accessibilityLabel={`Campo ${label}`}
+              accessibilityHint={`Editar ${label}`}
             />
-            {!!erro && <Text style={estilos.campoErro}>{erro}</Text>}
+            {!!erro && <AppText style={estilos.campoErro}>{erro}</AppText>}
           </>
         ) : (
-          <Text style={estilos.campoValor}>{valor || '—'}</Text>
+          <AppText style={estilos.campoValor}>{valor || '—'}</AppText>
         )}
       </View>
     </View>
@@ -80,7 +85,7 @@ function CampoSenha({ label, valor, onChange, mostrar, onToggle }: CampoSenhaPro
         <Ionicons name="lock-closed-outline" size={17} color={CORES.secundaria} />
       </View>
       <View style={estilos.campoConteudo}>
-        <Text style={estilos.campoLabel}>{label}</Text>
+        <AppText style={estilos.campoLabel}>{label}</AppText>
         <View style={estilos.senhaLinha}>
           <TextInput
             style={[estilos.campoInput, { flex: 1, marginBottom: 0 }]}
@@ -107,7 +112,7 @@ function CampoSenha({ label, valor, onChange, mostrar, onToggle }: CampoSenhaPro
 // ── Tela principal ────────────────────────────────────────────────────────────
 
 export function TelaMeuPerfil({ navigation }: Props) {
-  const { proprietario, atualizarPerfil } = useAuth()
+  const { proprietario, atualizarPerfil, atualizarFotoPerfil } = useAuth()
 
   const [modoEditar, setModoEditar] = useState(false)
   const [modoSenha,  setModoSenha]  = useState(false)
@@ -125,6 +130,33 @@ export function TelaMeuPerfil({ navigation }: Props) {
 
   const apelido      = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
   const dataCadastro = proprietario?.id ? extrairDataCadastro(proprietario.id) : '—'
+
+  async function capturarFoto(origem: 'camera' | 'galeria') {
+    const perm = origem === 'camera'
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (perm.status !== 'granted') {
+      Alert.alert('Permissão negada', `Não foi possível acessar ${origem === 'camera' ? 'a câmera' : 'a galeria'}. Ative nas configurações do seu celular.`)
+      return
+    }
+    const res = origem === 'camera'
+      ? await ImagePicker.launchCameraAsync({ quality: 0.5, allowsEditing: true, aspect: [1, 1] })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, allowsEditing: true, aspect: [1, 1] })
+    if (res.canceled || !res.assets?.[0]?.uri) return
+    await atualizarFotoPerfil(res.assets[0].uri)
+  }
+
+  function selecionarFoto() {
+    const opcoes: any[] = [
+      { text: 'Tirar Foto',          onPress: () => capturarFoto('camera')  },
+      { text: 'Escolher da Galeria', onPress: () => capturarFoto('galeria') },
+    ]
+    if (proprietario?.fotoPerfil) {
+      opcoes.push({ text: 'Remover Foto', style: 'destructive', onPress: () => atualizarFotoPerfil(null) })
+    }
+    opcoes.push({ text: 'Cancelar', style: 'cancel' })
+    Alert.alert('Foto de Perfil', 'Escolha uma opção:', opcoes)
+  }
 
   function handleTelefoneBlur() {
     const d = telefone.replace(/\D/g, '')
@@ -195,20 +227,31 @@ export function TelaMeuPerfil({ navigation }: Props) {
 
       {/* HEADER */}
       <View style={estilos.header}>
-        <View style={estilos.headerEsquerda}>
-          <Ionicons name="person-circle-outline" size={34} color={CORES.branco} />
-          <View style={{ marginLeft: ESPACOS.xs }}>
-            <Text style={estilos.headerSubtitulo}>Meu Perfil</Text>
-            <Text style={estilos.headerNome}>{apelido}</Text>
-          </View>
+        <AppText style={estilos.headerTitulo}>Meu Perfil</AppText>
+        <View style={estilos.headerDireita}>
+          {!modoEditar && !modoSenha && (
+            <TouchableOpacity
+              style={estilos.botaoEditar}
+              onPress={() => setModoEditar(true)}
+              accessible
+              accessibilityLabel="Editar perfil"
+              accessibilityRole="button"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="pencil" size={18} color={CORES.secundaria} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={estilos.botaoHome}
+            onPress={() => navigation.navigate('Home')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessible={true}
+            accessibilityLabel="Ir para Início"
+            accessibilityRole="button"
+          >
+            <Ionicons name="home" size={20} color={CORES.secundaria} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={estilos.botaoHome}
-          onPress={() => navigation.navigate('Home')}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="home" size={20} color={CORES.secundaria} />
-        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -224,18 +267,32 @@ export function TelaMeuPerfil({ navigation }: Props) {
 
             {/* Avatar */}
             <View style={estilos.avatarContainer}>
-              <View style={estilos.avatarCirculo}>
-                <Ionicons name="person" size={52} color={CORES.branco} />
-              </View>
-              <Text style={estilos.avatarNome}>{proprietario?.nome ?? apelido}</Text>
-              <Text style={estilos.avatarEmail}>{proprietario?.email ?? ''}</Text>
+              <TouchableOpacity
+                onPress={selecionarFoto}
+                accessible={true}
+                accessibilityLabel="Foto de perfil. Toque para alterar"
+                accessibilityRole="button"
+                style={{ position: 'relative' }}
+              >
+                {proprietario?.fotoPerfil ? (
+                  <Image source={{ uri: proprietario.fotoPerfil }} style={estilos.avatarImagem} />
+                ) : (
+                  <View style={estilos.avatarCirculo}>
+                    <Ionicons name="person" size={52} color={CORES.branco} />
+                  </View>
+                )}
+                <View style={estilos.avatarCameraBadge}>
+                  <Ionicons name="camera" size={14} color={CORES.branco} />
+                </View>
+              </TouchableOpacity>
+              <AppText style={estilos.avatarEmail}>{proprietario?.email ?? ''}</AppText>
             </View>
 
             <View style={estilos.divisoria} />
 
             {/* Campos */}
             <View style={estilos.camposSection}>
-              <Text style={estilos.sectionTitulo}>Dados pessoais</Text>
+              <AppText style={estilos.sectionTitulo}>Dados pessoais</AppText>
 
               <CampoInfo
                 label="Nome completo"
@@ -277,17 +334,13 @@ export function TelaMeuPerfil({ navigation }: Props) {
               <View style={estilos.botoesSection}>
                 <TouchableOpacity
                   style={estilos.botaoPrimario}
-                  onPress={() => setModoEditar(true)}
-                >
-                  <Ionicons name="pencil" size={16} color={CORES.branco} style={{ marginRight: ESPACOS.xs }} />
-                  <Text style={estilos.botaoPrimarioTexto}>Editar Perfil</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={estilos.botaoSecundario}
                   onPress={() => setModoSenha(true)}
+                  accessible={true}
+                  accessibilityLabel="Alterar senha"
+                  accessibilityRole="button"
                 >
                   <Ionicons name="lock-closed-outline" size={16} color={CORES.primaria} style={{ marginRight: ESPACOS.xs }} />
-                  <Text style={estilos.botaoSecundarioTexto}>Alterar Senha</Text>
+                  <AppText style={estilos.botaoPrimarioTexto}>Alterar Senha</AppText>
                 </TouchableOpacity>
               </View>
             )}
@@ -296,14 +349,14 @@ export function TelaMeuPerfil({ navigation }: Props) {
             {modoEditar && (
               <View style={estilos.botoesLinha}>
                 <TouchableOpacity style={estilos.botaoCancelar} onPress={cancelarEditar}>
-                  <Text style={estilos.botaoCancelarTexto}>Cancelar</Text>
+                  <AppText style={estilos.botaoCancelarTexto}>Cancelar</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[estilos.botaoSalvar, carregando && { opacity: 0.6 }]}
                   onPress={salvarPerfil}
                   disabled={carregando}
                 >
-                  <Text style={estilos.botaoSalvarTexto}>Salvar Alterações</Text>
+                  <AppText style={estilos.botaoSalvarTexto}>Salvar Alterações</AppText>
                 </TouchableOpacity>
               </View>
             )}
@@ -313,7 +366,7 @@ export function TelaMeuPerfil({ navigation }: Props) {
           {modoSenha && (
             <View style={[estilos.card, { marginTop: ESPACOS.md }]}>
               <View style={estilos.camposSection}>
-                <Text style={estilos.sectionTitulo}>Alterar Senha</Text>
+                <AppText style={estilos.sectionTitulo}>Alterar Senha</AppText>
                 <CampoSenha
                   label="Senha atual"
                   valor={senhaAtual}
@@ -338,10 +391,10 @@ export function TelaMeuPerfil({ navigation }: Props) {
               </View>
               <View style={estilos.botoesLinha}>
                 <TouchableOpacity style={estilos.botaoCancelar} onPress={cancelarSenha}>
-                  <Text style={estilos.botaoCancelarTexto}>Cancelar</Text>
+                  <AppText style={estilos.botaoCancelarTexto}>Cancelar</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity style={estilos.botaoSalvar} onPress={salvarSenha}>
-                  <Text style={estilos.botaoSalvarTexto}>Salvar Senha</Text>
+                  <AppText style={estilos.botaoSalvarTexto}>Salvar Senha</AppText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -361,13 +414,23 @@ const estilos = StyleSheet.create({
     backgroundColor: CORES.primaria,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: ESPACOS.md,
     paddingVertical: ESPACOS.sm,
   },
+  headerTitulo:    { color: CORES.branco, fontSize: 18, fontWeight: '700' },
   headerEsquerda:  { flexDirection: 'row', alignItems: 'center' },
+  headerDireita:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: ESPACOS.sm },
   headerSubtitulo: { color: CORES.cinzaTexto, fontSize: FONTES.pequena },
   headerNome:      { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
+  botaoEditar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: CORES.secundaria,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   botaoHome: {
     width: 38,
     height: 38,
@@ -397,21 +460,42 @@ const estilos = StyleSheet.create({
   // Avatar
   avatarContainer: { alignItems: 'center', marginBottom: ESPACOS.md },
   avatarCirculo: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: CORES.primaria,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: ESPACOS.sm,
+    borderWidth: 3,
+    borderColor: CORES.secundaria,
     shadowColor: CORES.primaria,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
-  avatarNome:  { fontSize: FONTES.subtitulo, fontWeight: '700', color: CORES.pretinho, marginBottom: 2 },
-  avatarEmail: { fontSize: FONTES.pequena,   color: CORES.cinzaTexto },
+  avatarImagem: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: CORES.secundaria,
+  },
+  avatarCameraBadge: {
+    position: 'absolute',
+    bottom: ESPACOS.sm,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: CORES.secundaria,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: CORES.branco,
+  },
+  avatarNome:  { fontSize: FONTES.subtitulo, fontWeight: '700', color: CORES.pretinho, marginBottom: 2, marginTop: ESPACOS.sm },
+  avatarEmail: { fontSize: FONTES.pequena,   color: CORES.textoSecundario },
 
   // Divisória
   divisoria: {
@@ -447,7 +531,7 @@ const estilos = StyleSheet.create({
     marginTop: 2,
   },
   campoConteudo: { flex: 1 },
-  campoLabel:    { fontSize: FONTES.pequena, color: CORES.cinzaTexto, marginBottom: 2 },
+  campoLabel:    { fontSize: FONTES.pequena, color: CORES.textoSecundario, marginBottom: 2 },
   campoValor:    { fontSize: FONTES.normal, color: CORES.pretinho, fontWeight: '500' },
   campoErro:     { color: CORES.erro, fontSize: FONTES.pequena, marginTop: 2 },
   campoInput: {
@@ -473,7 +557,7 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  botaoPrimarioTexto:   { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
+  botaoPrimarioTexto:   { color: CORES.primaria, fontSize: FONTES.normal, fontWeight: '700' },
   botaoSecundario: {
     borderWidth: 1.5,
     borderColor: CORES.primaria,
@@ -497,7 +581,7 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  botaoCancelarTexto: { color: CORES.cinzaTexto, fontSize: FONTES.normal, fontWeight: '600' },
+  botaoCancelarTexto: { color: CORES.textoSecundario, fontSize: FONTES.normal, fontWeight: '600' },
   botaoSalvar: {
     flex: 2,
     backgroundColor: CORES.secundaria,
@@ -506,5 +590,5 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  botaoSalvarTexto: { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
+  botaoSalvarTexto: { color: CORES.primaria, fontSize: FONTES.normal, fontWeight: '700' },
 })

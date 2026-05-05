@@ -21,8 +21,12 @@ export const CORES = {
   borda:           '#E5E7EB',
   pretinho:        '#1F2937',
 
+  // Acessibilidade — textos secundários em fundos claros (WCAG AA ≥ 4.5:1)
+  textoSecundario: '#4A5568',  // 6.85:1 sobre #F0F2F8 | 6.79:1 sobre #FFFFFF
+  placeholder:     '#757575',  // 4.56:1 sobre #FFFFFF (mínimo WCAG para placeholder)
+
   // Estados
-  erro:            '#E74C3C',
+  erro:            '#C0392B',  // 5.33:1 sobre #FFFFFF | 4.78:1 sobre #F0F2F8 (WCAG AA)
   atencao:         '#F59E0B',
   sucesso:         '#10B981',
   info:            '#3B82F6',

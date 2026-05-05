@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react'
 import {
-  View, Text, TouchableOpacity, StyleSheet,
+  View, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
@@ -12,7 +13,7 @@ import { useVeiculo } from '../../contexts/VeiculoContext'
 import { listarCarrosApi, listarMotosApi, excluirVeiculoApi, Carro, Moto } from '../../services/api'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { BottomNavBar } from '../../components/BottomNavBar'
-import IconeNavVeiculo from '../../assets/icons/ICONE_RELATORIO_VEICULOS.svg'
+import { AvatarCircular } from '../../components/AvatarCircular'
 
 interface Props { navigation: any }
 
@@ -123,10 +124,14 @@ export function TelaVeiculos({ navigation }: Props) {
         style={[estilos.card, selecionado && estilos.cardAtivo]}
         onPress={() => handleCardTap(item.id)}
         activeOpacity={0.85}
+        accessible
+        accessibilityLabel={`Carro ${item.marca} ${item.modelo}, placa ${item.placa}${item.ano ? `, ano ${item.ano}` : ''}${ativo ? ', veículo ativo' : ''}`}
+        accessibilityRole="button"
+        accessibilityState={{ selected: selecionado }}
       >
         <View style={estilos.cardTopRow}>
-          <Text style={estilos.cardMarcaModelo}>🚗 {item.marca} {item.modelo}</Text>
-          <Text style={estilos.cardPlaca}>{item.placa}</Text>
+          <AppText style={estilos.cardMarcaModelo}>🚗 {item.marca} {item.modelo}</AppText>
+          <AppText style={estilos.cardPlaca}>{item.placa}</AppText>
         </View>
 
         <View style={estilos.cardDivisor} />
@@ -144,11 +149,11 @@ export function TelaVeiculos({ navigation }: Props) {
           {ativo ? (
             <View style={estilos.tagAtivo}>
               <Ionicons name="checkmark-circle" size={14} color={CORES.secundariaEscuro} />
-              <Text style={estilos.tagAtivoTexto}>Veículo ativo</Text>
+              <AppText style={estilos.tagAtivoTexto}>Veículo ativo</AppText>
             </View>
           ) : (
             <TouchableOpacity style={estilos.btnDefinirAtivo} onPress={() => handleDefinirAtivo(item, 'carro')}>
-              <Text style={estilos.btnDefinirAtivoTexto}>Definir como ativo</Text>
+              <AppText style={estilos.btnDefinirAtivoTexto}>Definir como ativo</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -167,10 +172,14 @@ export function TelaVeiculos({ navigation }: Props) {
         style={[estilos.card, selecionado && estilos.cardAtivo]}
         onPress={() => handleCardTap(item.id)}
         activeOpacity={0.85}
+        accessible
+        accessibilityLabel={`Moto ${item.marca} ${item.modelo}, placa ${item.placa}${item.ano ? `, ano ${item.ano}` : ''}${ativo ? ', veículo ativo' : ''}`}
+        accessibilityRole="button"
+        accessibilityState={{ selected: selecionado }}
       >
         <View style={estilos.cardTopRow}>
-          <Text style={estilos.cardMarcaModelo}>🏍️ {item.marca} {item.modelo}</Text>
-          <Text style={estilos.cardPlaca}>{item.placa}</Text>
+          <AppText style={estilos.cardMarcaModelo}>🏍️ {item.marca} {item.modelo}</AppText>
+          <AppText style={estilos.cardPlaca}>{item.placa}</AppText>
         </View>
 
         <View style={estilos.cardDivisor} />
@@ -186,11 +195,11 @@ export function TelaVeiculos({ navigation }: Props) {
           {ativo ? (
             <View style={estilos.tagAtivo}>
               <Ionicons name="checkmark-circle" size={14} color={CORES.secundariaEscuro} />
-              <Text style={estilos.tagAtivoTexto}>Veículo ativo</Text>
+              <AppText style={estilos.tagAtivoTexto}>Veículo ativo</AppText>
             </View>
           ) : (
             <TouchableOpacity style={estilos.btnDefinirAtivo} onPress={() => handleDefinirAtivo(item, 'moto')}>
-              <Text style={estilos.btnDefinirAtivoTexto}>Definir como ativo</Text>
+              <AppText style={estilos.btnDefinirAtivoTexto}>Definir como ativo</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -206,30 +215,30 @@ export function TelaVeiculos({ navigation }: Props) {
       {/* HEADER */}
       <View style={estilos.header}>
         <View style={estilos.headerEsquerda}>
-          <Ionicons name="person-circle-outline" size={34} color={CORES.branco} />
+          <AvatarCircular uri={proprietario?.fotoPerfil} size={34} />
           <View style={{ marginLeft: ESPACOS.xs }}>
-            <Text style={estilos.headerOla}>Olá,</Text>
-            <Text style={estilos.headerNome}>{apelido}</Text>
+            <AppText style={estilos.headerOla}>Olá,</AppText>
+            <AppText style={estilos.headerNome}>{apelido}</AppText>
           </View>
         </View>
         <View style={estilos.headerAcoes}>
-          <TouchableOpacity style={estilos.btnAcao} onPress={handleEditar}>
+          <TouchableOpacity style={estilos.btnAcao} onPress={handleEditar} accessible accessibilityLabel="Editar veículo selecionado" accessibilityRole="button">
             <View style={[estilos.btnCirculo, { backgroundColor: CORES.secundaria }]}>
               <Ionicons name="pencil" size={15} color={CORES.branco} />
             </View>
-            <Text style={estilos.btnLabel}>Editar</Text>
+            <AppText style={estilos.btnLabel}>Editar</AppText>
           </TouchableOpacity>
-          <TouchableOpacity style={estilos.btnAcao} onPress={handleNovo}>
+          <TouchableOpacity style={estilos.btnAcao} onPress={handleNovo} accessible accessibilityLabel={`Novo ${abaAtiva === 'carro' ? 'carro' : 'moto'}`} accessibilityRole="button">
             <View style={[estilos.btnCirculo, { backgroundColor: CORES.secundaria }]}>
               <Ionicons name="add" size={20} color={CORES.branco} />
             </View>
-            <Text style={estilos.btnLabel}>Novo</Text>
+            <AppText style={estilos.btnLabel}>Novo</AppText>
           </TouchableOpacity>
-          <TouchableOpacity style={estilos.btnAcao} onPress={handleExcluir}>
+          <TouchableOpacity style={estilos.btnAcao} onPress={handleExcluir} accessible accessibilityLabel="Excluir veículo selecionado" accessibilityRole="button">
             <View style={[estilos.btnCirculo, { backgroundColor: CORES.erro }]}>
               <Ionicons name="trash-outline" size={15} color={CORES.branco} />
             </View>
-            <Text style={estilos.btnLabel}>Excluir</Text>
+            <AppText style={estilos.btnLabel}>Excluir</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -237,8 +246,8 @@ export function TelaVeiculos({ navigation }: Props) {
       {/* TÍTULO */}
       <View style={estilos.tituloRow}>
         <View style={estilos.tituloEsquerda}>
-          <IconeNavVeiculo width={22} height={22} color={CORES.secundaria} />
-          <Text style={estilos.tituloTexto}>Veículos</Text>
+          <Ionicons name="car-outline" size={24} color={CORES.secundaria} />
+          <AppText style={estilos.tituloTexto}>Veículos</AppText>
         </View>
       </View>
       <View style={estilos.divisoria} />
@@ -248,18 +257,26 @@ export function TelaVeiculos({ navigation }: Props) {
         <TouchableOpacity
           style={[estilos.aba, abaAtiva === 'carro' && estilos.abaAtiva]}
           onPress={() => { setAbaAtiva('carro'); setCardSelecionado(null) }}
+          accessible={true}
+          accessibilityLabel="Ver carros"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: abaAtiva === 'carro' }}
         >
-          <Text style={[estilos.abaTexto, abaAtiva === 'carro' && estilos.abaTextoAtivo]}>
+          <AppText style={[estilos.abaTexto, abaAtiva === 'carro' && estilos.abaTextoAtivo]}>
             🚗 Carro
-          </Text>
+          </AppText>
         </TouchableOpacity>
         <TouchableOpacity
           style={[estilos.aba, abaAtiva === 'moto' && estilos.abaAtiva]}
           onPress={() => { setAbaAtiva('moto'); setCardSelecionado(null) }}
+          accessible={true}
+          accessibilityLabel="Ver motos"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: abaAtiva === 'moto' }}
         >
-          <Text style={[estilos.abaTexto, abaAtiva === 'moto' && estilos.abaTextoAtivo]}>
+          <AppText style={[estilos.abaTexto, abaAtiva === 'moto' && estilos.abaTextoAtivo]}>
             🏍️ Moto
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 
@@ -270,16 +287,15 @@ export function TelaVeiculos({ navigation }: Props) {
         </View>
       ) : listaAtual.length === 0 ? (
         <View style={estilos.centralizador}>
-          <Ionicons
-            name={abaAtiva === 'carro' ? 'car-outline' : 'bicycle-outline'}
-            size={52}
-            color={CORES.cinzaTexto}
-          />
-          <Text style={estilos.semDados}>
+          {abaAtiva === 'carro'
+            ? <Ionicons name="car-outline" size={52} color={CORES.cinzaTexto} />
+            : <MaterialCommunityIcons name="motorbike" size={52} color={CORES.cinzaTexto} />
+          }
+          <AppText style={estilos.semDados}>
             Nenhum {abaAtiva === 'carro' ? 'carro' : 'moto'} cadastrado
-          </Text>
+          </AppText>
           <TouchableOpacity style={estilos.btnAdicionar} onPress={handleNovo}>
-            <Text style={estilos.btnAdicionarTexto}>Adicionar</Text>
+            <AppText style={estilos.btnAdicionarTexto}>Adicionar</AppText>
           </TouchableOpacity>
         </View>
       ) : (
@@ -303,8 +319,8 @@ export function TelaVeiculos({ navigation }: Props) {
 function CampoInfo({ label, valor }: { label: string; valor: string }) {
   return (
     <View style={estilos.campoInfo}>
-      <Text style={estilos.campoInfoLabel}>{label}</Text>
-      <Text style={estilos.campoInfoValor}>{valor}</Text>
+      <AppText style={estilos.campoInfoLabel}>{label}</AppText>
+      <AppText style={estilos.campoInfoValor}>{valor}</AppText>
     </View>
   )
 }
@@ -358,7 +374,7 @@ const estilos = StyleSheet.create({
   abaTextoAtivo: { color: CORES.secundariaEscuro, fontWeight: '700' },
 
   centralizador:     { flex: 1, backgroundColor: CORES.cinzaClaro, justifyContent: 'center', alignItems: 'center', gap: ESPACOS.md },
-  semDados:          { fontSize: FONTES.normal, color: CORES.cinzaTexto, fontWeight: '500' },
+  semDados:          { fontSize: FONTES.normal, color: CORES.textoSecundario, fontWeight: '500' },
   btnAdicionar:      { backgroundColor: CORES.secundaria, borderRadius: 20, paddingHorizontal: ESPACOS.lg, paddingVertical: ESPACOS.sm },
   btnAdicionarTexto: { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
 
@@ -394,7 +410,7 @@ const estilos = StyleSheet.create({
 
   // Campo info
   campoInfo:       { minWidth: '30%' },
-  campoInfoLabel:  { fontSize: 10, color: CORES.cinzaTexto },
+  campoInfoLabel:  { fontSize: 10, color: CORES.textoSecundario },
   campoInfoValor:  { fontSize: FONTES.pequena, color: CORES.pretinho, fontWeight: '600' },
 
   veiculoLabel:    { fontSize: FONTES.pequena, color: CORES.secundaria, fontWeight: '600', flex: 1, textAlign: 'right', marginLeft: ESPACOS.sm },

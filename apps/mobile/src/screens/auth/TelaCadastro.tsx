@@ -1,17 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
   Alert, TextInput as TextInputType,
 } from 'react-native'
+import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { mascaraTelefone } from '../../utils/mascaras'
-import LogomarcaIcone1 from '../../assets/icons/LOGOMARCA_ICONE1.svg'
-import IconeUsuario from '../../assets/icons/ICONE_MENU_LATERAL_USUARIO.svg'
-import IconeInicio from '../../assets/icons/ICONE_MENU_LATERAL_INICIO.svg'
+import Logomarca1 from '../../assets/icons/LOGOMARCA_1.svg'
 
 interface Props {
   navigation: any
@@ -44,8 +43,8 @@ function Campo({
   return (
     <View style={estilos.campoWrapper}>
       <View style={estilos.labelRow}>
-        <Text style={estilos.label}>{label}</Text>
-        <Text style={estilos.obrigatorio}> *</Text>
+        <AppText style={estilos.label}>{label}</AppText>
+        <AppText style={estilos.obrigatorio}> *</AppText>
       </View>
       <View style={[estilos.inputContainer, erro ? estilos.inputErro : valido ? estilos.inputValido : null]}>
         <Ionicons name={icone as any} size={20} color={CORES.cinzaTexto} style={estilos.iconeInput} />
@@ -55,7 +54,7 @@ function Campo({
           value={valor}
           onChangeText={onChange}
           placeholder={placeholder}
-          placeholderTextColor={CORES.cinzaTexto}
+          placeholderTextColor={CORES.placeholder}
           keyboardType={tipo === 'email' ? 'email-address' : tipo === 'phone' ? 'phone-pad' : 'default'}
           autoCapitalize={tipo === 'email' || eSenha ? 'none' : 'words'}
           secureTextEntry={eSenha && !mostrar}
@@ -73,7 +72,7 @@ function Campo({
           </TouchableOpacity>
         )}
       </View>
-      {erro && <Text style={estilos.textoErro}>{erro}</Text>}
+      {erro && <AppText style={estilos.textoErro}>{erro}</AppText>}
     </View>
   )
 }
@@ -150,11 +149,17 @@ export function TelaCadastro({ navigation }: Props) {
       {/* HEADER */}
       <View style={estilos.header}>
         <View style={estilos.headerEsquerda}>
-          <LogomarcaIcone1 width={38} height={38} color="white" />
-          <Text style={estilos.headerTitulo}>Criar conta</Text>
+          <Logomarca1 width={70} height={35} color="white" />
+          <AppText style={estilos.headerTitulo}>Criar conta</AppText>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <IconeInicio width={26} height={26} color="white" />
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Home')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible={true}
+          accessibilityLabel="Ir para Início"
+          accessibilityRole="button"
+        >
+          <Ionicons name="home-outline" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -164,8 +169,8 @@ export function TelaCadastro({ navigation }: Props) {
 
           {/* Título */}
           <View style={estilos.tituloRow}>
-            <IconeUsuario width={26} height={26} color={CORES.secundaria} />
-            <Text style={estilos.tituloPagina}>Proprietário / Cadastro</Text>
+            <Ionicons name="person-add-outline" size={22} color={CORES.secundaria} />
+            <AppText style={estilos.tituloPagina}>Proprietário / Cadastro</AppText>
           </View>
           <View style={estilos.divisoria} />
 
@@ -235,24 +240,27 @@ export function TelaCadastro({ navigation }: Props) {
           />
 
           {/* Termos */}
-          <Text style={estilos.termos}>
+          <AppText style={estilos.termos}>
             Ao criar sua conta, você concorda com nossos{' '}
-            <Text style={estilos.linkTermos}>Termos de Uso</Text>
+            <AppText style={estilos.linkTermos}>Termos de Uso</AppText>
             {' '}e{' '}
-            <Text style={estilos.linkTermos}>Política de Privacidade</Text>
-          </Text>
+            <AppText style={estilos.linkTermos}>Política de Privacidade</AppText>
+          </AppText>
 
           {/* Botão Confirmar */}
           <TouchableOpacity
             style={[estilos.botaoConfirmar, carregando && estilos.botaoDesabilitado]}
             onPress={handleCadastro}
             disabled={carregando}
+            accessible={true}
+            accessibilityLabel="Confirmar cadastro"
             accessibilityRole="button"
+            accessibilityState={{ disabled: carregando }}
           >
             {carregando ? (
               <ActivityIndicator color={CORES.branco} />
             ) : (
-              <Text style={estilos.textoBotao}>Confirmar</Text>
+              <AppText style={estilos.textoBotao}>Confirmar</AppText>
             )}
           </TouchableOpacity>
 

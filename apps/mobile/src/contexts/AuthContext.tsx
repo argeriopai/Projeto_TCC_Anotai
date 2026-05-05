@@ -8,6 +8,7 @@ interface Proprietario {
   apelido: string | null
   email: string
   telefone?: string
+  fotoPerfil?: string
 }
 
 interface AuthContextData {
@@ -19,6 +20,7 @@ interface AuthContextData {
   cadastrar: (dados: { nome: string; email: string; senha: string; apelido?: string; telefone?: string }) => Promise<void>
   logout: () => Promise<void>
   atualizarPerfil: (dados: Partial<Pick<Proprietario, 'nome' | 'apelido' | 'telefone'>>) => Promise<void>
+  atualizarFotoPerfil: (uri: string | null) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData)
@@ -81,6 +83,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(atualizado))
   }
 
+  async function atualizarFotoPerfil(uri: string | null) {
+    if (!proprietario) return
+    const atualizado: Proprietario = { ...proprietario, fotoPerfil: uri ?? undefined }
+    setProprietario(atualizado)
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(atualizado))
+  }
+
   return (
     <AuthContext.Provider value={{
       proprietario,
@@ -91,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cadastrar,
       logout,
       atualizarPerfil,
+      atualizarFotoPerfil,
     }}>
       {children}
     </AuthContext.Provider>

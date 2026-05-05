@@ -40,7 +40,20 @@ apps/mobile/
 - RootNavigator: rota NotificacoesPush ✅
 - TelaHome drawer: item "Notificações" (ícone notifications-outline) ✅
 
-## Próximo passo — Sprint 5
+## Sprint 5 — CONCLUÍDO
+
+### 5A — Veículo Ativo na Home
+- VeiculoContext: veiculoAtivoId (string|null) + ativarVeiculo(id), persiste em '@anotai:veiculoAtivo' ✅
+- TelaHome: seção 'Meus Veículos' com FlatList horizontal, cards com badge ATIVO e borda verde ✅
+
+### 5B — Relatório de Despesas
+- Cria TelaRelatorio: filtros mensal/semestral/anual, cards Serviços + Peças + Total Geral ✅
+- Lista de lançamentos combinada (serviços + peças) ordenada por data ✅
+- Valores formatados R$ X.XXX,XX ✅
+- TelaHome: card de atalho 'Ver Relatório de Despesas' + item 'Relatório' na drawer ✅
+- RootNavigator: rota TelaRelatorio ✅
+
+## Próximo passo — Sprint 6
 A definir.
 
 ## Convenções do projeto

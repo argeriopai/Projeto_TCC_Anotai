@@ -71,6 +71,13 @@ apps/mobile/
 - Badge 'ATIVO': removido posicionamento absoluto; agora em fluxo normal abaixo do modelo ✅
 - cardVeiculo: height fixo 100 → minHeight 110, justifyContent center → flex-start ✅
 
+### 5E — Ajustes de UX III (sincronização e header do drawer)
+- VeiculoContext: definirVeiculoAtivo() agora também atualiza veiculoAtivoId e @anotai:veiculoAtivo ✅
+  (TelaVeiculos chamava só definirVeiculoAtivo; veiculoAtivoId ficava desatualizado na Home)
+- Drawer header: email com numberOfLines=1 ellipsizeMode="tail" para não invadir a lista ✅
+- Drawer header: paddingTop 40, paddingBottom 20, removidos minHeight/maxHeight — altura automática ✅
+- Separador visual (height 1, rgba branco 15%, marginTop 8) entre header e lista de itens ✅
+
 ## Próximo passo — Sprint 6
 A definir.
 

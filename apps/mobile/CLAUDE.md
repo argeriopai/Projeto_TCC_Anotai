@@ -62,6 +62,15 @@ apps/mobile/
 - Badge 'ATIVO' movido para canto inferior esquerdo (sem sobreposição com ícone) ✅
 - onPress diferenciado: inativo → ativarVeiculo + Alert confirmação; ativo → Alert informativo ✅
 
+### 5D — Ajustes de UX II (drawer + ativação de veículo + badge)
+- Drawer largura: fixo 280 → 72% da tela (SCREEN_WIDTH * 0.72) ✅
+- Drawer logo: 55×28 → 65×65 ✅
+- Bug corrigido: ativar veículo na Home agora chama definirVeiculoAtivo() com objeto completo ✅
+  (TelaRegistrarServico/Peca leem veiculoAtivo — objeto de @anotai:veiculo_ativo —
+   e não veiculoAtivoId; a Home só chamava ativarVeiculo(id), que salva apenas o ID)
+- Badge 'ATIVO': removido posicionamento absoluto; agora em fluxo normal abaixo do modelo ✅
+- cardVeiculo: height fixo 100 → minHeight 110, justifyContent center → flex-start ✅
+
 ## Próximo passo — Sprint 6
 A definir.
 

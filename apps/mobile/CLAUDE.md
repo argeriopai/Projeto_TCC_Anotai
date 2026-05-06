@@ -53,6 +53,15 @@ apps/mobile/
 - TelaHome: card de atalho 'Ver Relatório de Despesas' + item 'Relatório' na drawer ✅
 - RootNavigator: rota TelaRelatorio ✅
 
+### 5C — Ajustes de UX (drawer + cards de veículo)
+- Drawer: itens envolvidos em ScrollView (todos acessíveis via scroll) ✅
+- Drawer header: maxHeight 160, logo 55×28, avatar 44, nome fontSize 15, email fontSize 11 ✅
+- Drawer itens: paddingVertical reduzido para 10 ✅
+- Seção veículo: título → 'Ative aqui o veículo', subtítulo atualizado ✅
+- Cards: ícone checkmark-circle (ativo) / radio-button-off (inativo) no canto sup direito ✅
+- Badge 'ATIVO' movido para canto inferior esquerdo (sem sobreposição com ícone) ✅
+- onPress diferenciado: inativo → ativarVeiculo + Alert confirmação; ativo → Alert informativo ✅
+
 ## Próximo passo — Sprint 6
 A definir.
 

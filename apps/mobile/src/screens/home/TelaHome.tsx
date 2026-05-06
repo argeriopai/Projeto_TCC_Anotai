@@ -441,7 +441,7 @@ export function TelaHome({ navigation }: Props) {
             )}
             <AppText style={estilos.drawerNome}>{estaLogado ? (apelido || 'Usuário') : 'Visitante'}</AppText>
             {estaLogado
-              ? <AppText style={estilos.drawerEmail}>{proprietario?.email}</AppText>
+              ? <AppText style={estilos.drawerEmail} numberOfLines={1} ellipsizeMode="tail">{proprietario?.email}</AppText>
               : (
                 <TouchableOpacity onPress={() => navegarDaDrawer('Login')}>
                   <AppText style={estilos.drawerEmailLink}>Faça seu login</AppText>
@@ -799,6 +799,8 @@ const estilos = StyleSheet.create({
     backgroundColor: CORES.primariaMedio,
     padding: ESPACOS.sm,
     paddingTop: ESPACOS.md,
+    paddingBottom: 12,
+    minHeight: 140,
     maxHeight: 160,
     alignItems: 'center',
     gap: 2,

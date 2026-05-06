@@ -59,10 +59,13 @@ export function VeiculoProvider({ children }: { children: React.ReactNode }) {
 
   async function definirVeiculoAtivo(v: VeiculoAtivo | null) {
     setVeiculoAtivoState(v)
+    setVeiculoAtivoId(v?.id ?? null)
     if (v) {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(v))
+      await AsyncStorage.setItem('@anotai:veiculoAtivo', v.id)
     } else {
       await AsyncStorage.removeItem(STORAGE_KEY)
+      await AsyncStorage.removeItem('@anotai:veiculoAtivo')
     }
   }
 

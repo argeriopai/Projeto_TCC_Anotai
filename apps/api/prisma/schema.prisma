@@ -1,0 +1,280 @@
+// =============================================================================
+// ANOTAÍ - schema.prisma
+// Este arquivo define a estrutura completa do banco de dados do aplicativo.
+//
+// Decisão de modelagem: Toda manutenção é vinculada a um veículo específico
+// através do campo "veiculoId" (RF09). O veículo, por sua vez, pertence a um
+// proprietário. Isso garante que um usuário nunca veja dados de outro usuário.
+//
+// Sobre o vínculo Placa+Modelo como identificador único (Requisito Crítico):
+// Usamos @@unique([placa, proprietarioId]) para garantir que o mesmo usuário
+// não cadastre o mesmo veículo duas vezes, mas usuários diferentes podem ter
+// veículos com a mesma placa (ex: situação de venda/transferência futura).
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// MODELO: Proprietario (RF01, RF02, RF03)
+// Representa o usuário do aplicativo.
+// Decisão de usabilidade: usamos "apelido" para personalizar a saudação
+// na tela inicial ("Bem-vindo, João!"), criando uma experiência mais acolhedora.
+// =============================================================================
+model Proprietario {
+  id        String   @id @default(uuid())
+  nome      String
+  apelido   String?  // Nome exibido na saudação da tela inicial
+  email     String   @unique
+  senha     String   // Armazenada com hash bcrypt — NUNCA em texto puro
+  telefone  String?
+  avatarUrl String?  // Foto de perfil do usuário
+  ativo     Boolean  @default(true)
+  criadoEm DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relacionamentos
+  veiculos    Veiculo[]
+  sessoes     Sessao[]   // Histórico de logins para segurança (RNF12)
+
+  @@map("proprietarios") // Nome da tabela no banco em minúsculas (padrão SQL)
+}
+
+// =============================================================================
+// MODELO: Veiculo (RF04, RF05, RF06)
+// Representa cada veículo cadastrado pelo usuário.
+//
+// Decisão do @@unique([placa, proprietarioId]): Implementa o "Vínculo
+// Identificador" exigido. A placa sozinha não pode ser chave única global
+// pois o mesmo veículo pode ter donos diferentes ao longo do tempo.
+// =============================================================================
+model Veiculo {
+  id           String      @id @default(uuid())
+  placa        String      // Formato: AAA-0000 ou AAA0A00 (Mercosul)
+  modelo       String      // Ex: "Honda Civic"
+  marca        String      // Ex: "Honda"
+  ano          Int         // Ano de fabricação
+  cor          String?
+  quilometragem Int?       // KM atual - atualizado a cada manutenção
+  combustivel  Combustivel @default(GASOLINA)
+  tipo         TipoVeiculo @default(CARRO)
+  fotoUrl      String?     // Foto do veículo para identificação visual
+  ativo        Boolean     @default(true)
+  criadoEm    DateTime    @default(now())
+  atualizadoEm DateTime   @updatedAt
+
+  // Chave estrangeira — vincula o veículo ao seu dono
+  proprietarioId String
+  proprietario   Proprietario @relation(fields: [proprietarioId], references: [id], onDelete: Cascade)
+
+  // Relacionamentos
+  manutencoes   Manutencao[]
+  notificacoes  Notificacao[]
+
+  // Índice único: garante que um usuário não cadastre o mesmo veículo duas vezes
+  @@unique([placa, proprietarioId])
+  @@map("veiculos")
+}
+
+// =============================================================================
+// MODELO: Manutencao (RF07, RF08, RF09, RF10)
+// Registro central do aplicativo. Cada manutenção pode ter vários serviços,
+// várias peças e vários anexos (fotos e documentos).
+//
+// Decisão: Separamos Serviço e Peça em tabelas próprias para permitir
+// consultas e filtros específicos (RF12) sem precisar analisar texto livre.
+// =============================================================================
+model Manutencao {
+  id              String         @id @default(uuid())
+  data            DateTime       // Data em que a manutenção foi realizada
+  tipo            TipoManutencao @default(PREVENTIVA)
+  descricao       String?        // Campo de texto livre (suporta input por voz - Req. Input Inteligente)
+  localNome       String?        // Nome da oficina/estabelecimento
+  localEndereco   String?
+  profissional    String?        // Nome do mecânico/responsável (RF10)
+  valorTotal      Decimal?       @db.Decimal(10, 2)
+  quilometragem   Int?           // KM no momento da manutenção
+  observacoes     String?        // Campo extra para o usuário anotar o que quiser
+  status          StatusManutencao @default(CONCLUIDA)
+  criadoEm       DateTime       @default(now())
+  atualizadoEm   DateTime       @updatedAt
+
+  // Chave estrangeira — vincula a manutenção ao veículo (RF09)
+  veiculoId String
+  veiculo   Veiculo @relation(fields: [veiculoId], references: [id], onDelete: Cascade)
+
+  // Relacionamentos — uma manutenção pode ter vários itens
+  servicos  Servico[]
+  pecas     Peca[]
+  anexos    Anexo[]    // Fotos e documentos (RF15, RF16)
+
+  @@map("manutencoes")
+}
+
+// =============================================================================
+// MODELO: Servico (RF07)
+// Serviços realizados em uma manutenção (ex: troca de óleo, alinhamento).
+// Decisão: Campo "registradoPorVoz" indica se foi digitado ou falado pelo
+// usuário — útil para métricas de usabilidade do TCC.
+// =============================================================================
+model Servico {
+  id                String  @id @default(uuid())
+  nome              String  // Ex: "Troca de óleo do motor"
+  descricao         String? // Detalhes adicionais
+  valor             Decimal? @db.Decimal(10, 2)
+  registradoPorVoz  Boolean @default(false) // Controla se veio do Speech-to-Text
+  criadoEm         DateTime @default(now())
+
+  manutencaoId String
+  manutencao   Manutencao @relation(fields: [manutencaoId], references: [id], onDelete: Cascade)
+
+  @@map("servicos")
+}
+
+// =============================================================================
+// MODELO: Peca (RF08)
+// Peças substituídas em uma manutenção (ex: filtro de ar, pastilha de freio).
+// =============================================================================
+model Peca {
+  id               String  @id @default(uuid())
+  nome             String  // Ex: "Filtro de ar do motor"
+  marca            String? // Ex: "Mahle"
+  referencia       String? // Código da peça para facilitar recompra
+  quantidade       Int     @default(1)
+  valorUnitario    Decimal? @db.Decimal(10, 2)
+  registradoPorVoz Boolean @default(false) // Controla se veio do Speech-to-Text
+  criadoEm        DateTime @default(now())
+
+  manutencaoId String
+  manutencao   Manutencao @relation(fields: [manutencaoId], references: [id], onDelete: Cascade)
+
+  @@map("pecas")
+}
+
+// =============================================================================
+// MODELO: Anexo (RF15, RF16 - Biblioteca Visual de Prova)
+// Fotos e documentos vinculados a uma manutenção.
+//
+// Decisão arquitetural: Separar o anexo em um modelo próprio (em vez de
+// um simples campo de array) permite:
+// 1. Armazenar metadados de cada foto (tipo, legenda, tamanho)
+// 2. Excluir fotos individualmente sem afetar a manutenção
+// 3. Organizar por tipo (FOTO_SERVICO, NOTA_FISCAL, GARANTIA)
+// =============================================================================
+model Anexo {
+  id          String     @id @default(uuid())
+  tipo        TipoAnexo  @default(FOTO_SERVICO)
+  url         String     // Caminho/URL onde o arquivo está armazenado
+  nomeArquivo String     // Nome original do arquivo
+  tamanhoBytes Int?      // Tamanho em bytes — para controle de espaço
+  mimeType    String?    // Ex: "image/jpeg", "application/pdf"
+  legenda     String?    // Descrição opcional da foto pelo usuário
+  criadoEm   DateTime   @default(now())
+
+  // Chave estrangeira — cada foto pertence a uma manutenção específica
+  manutencaoId String
+  manutencao   Manutencao @relation(fields: [manutencaoId], references: [id], onDelete: Cascade)
+
+  @@map("anexos")
+}
+
+// =============================================================================
+// MODELO: Notificacao (RF14)
+// Lembretes de manutenção preventiva.
+// Decisão: "motivoVoz" armazena o texto transcrito pelo Speech-to-Text
+// quando o usuário usa a função de voz para descrever o motivo.
+// =============================================================================
+model Notificacao {
+  id          String            @id @default(uuid())
+  titulo      String            // Ex: "Trocar óleo"
+  motivo      String?           // Descrição do lembrete
+  motivoVoz   Boolean           @default(false) // Se foi registrado por voz
+  dataAlerta  DateTime          // Quando o lembrete deve disparar
+  kmAlerta    Int?              // Ou quando atingir X quilômetros
+  status      StatusNotificacao @default(PENDENTE)
+  criadoEm   DateTime          @default(now())
+
+  veiculoId String
+  veiculo   Veiculo @relation(fields: [veiculoId], references: [id], onDelete: Cascade)
+
+  @@map("notificacoes")
+}
+
+// =============================================================================
+// MODELO: Sessao
+// Controle de sessões ativas do usuário (segurança - RNF12, RNF13).
+// Permite que o usuário veja todos os dispositivos conectados e faça
+// logout remoto em caso de perda do celular.
+// =============================================================================
+model Sessao {
+  id           String   @id @default(uuid())
+  token        String   @unique @db.VarChar(500)
+  dispositivo  String?  // Ex: "Samsung Galaxy A54"
+  ip           String?
+  ativa        Boolean  @default(true)
+  criadoEm    DateTime @default(now())
+  expiraEm    DateTime
+
+  proprietarioId String
+  proprietario   Proprietario @relation(fields: [proprietarioId], references: [id], onDelete: Cascade)
+
+  @@map("sessoes")
+}
+
+// =============================================================================
+// ENUMERAÇÕES - Tipos fixos usados nos modelos acima
+// Usar enums em vez de strings livres evita erros de digitação e facilita
+// filtros e relatórios no futuro.
+// =============================================================================
+
+enum TipoVeiculo {
+  CARRO
+  MOTO
+  CAMINHONETE
+  CAMINHAO
+  ONIBUS
+  OUTRO
+}
+
+enum Combustivel {
+  GASOLINA
+  ALCOOL
+  FLEX
+  DIESEL
+  ELETRICO
+  HIBRIDO
+  GNV
+}
+
+enum TipoManutencao {
+  PREVENTIVA   // Manutenção agendada/periódica (ex: troca de óleo a cada 5000km)
+  CORRETIVA    // Manutenção por defeito/falha
+  EMERGENCIAL  // Manutenção urgente/não planejada
+}
+
+enum StatusManutencao {
+  CONCLUIDA
+  EM_ANDAMENTO
+  AGENDADA
+  CANCELADA
+}
+
+enum TipoAnexo {
+  FOTO_SERVICO    // Foto do serviço executado (motor, peça, etc.)
+  NOTA_FISCAL     // Documento fiscal da manutenção (RF16)
+  GARANTIA        // Termo de garantia da peça/serviço
+  OUTRO
+}
+
+enum StatusNotificacao {
+  PENDENTE
+  ENVIADA
+  VISUALIZADA
+  CANCELADA
+}

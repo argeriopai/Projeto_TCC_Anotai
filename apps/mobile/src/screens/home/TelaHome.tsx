@@ -282,8 +282,8 @@ export function TelaHome({ navigation }: Props) {
           {/* Seção Meus Veículos */}
           {veiculos.length > 0 && (
             <View style={estilos.secaoVeiculos}>
-              <AppText style={estilos.subtituloAcoes}>Selecione o veículo ativo</AppText>
-              <AppText style={estilos.subtituloVeiculoSub}>Os registros serão vinculados ao veículo selecionado</AppText>
+              <AppText style={estilos.subtituloAcoes}>Ative aqui o veículo</AppText>
+              <AppText style={estilos.subtituloVeiculoSub}>Toque no veículo para ativá-lo para novos registros</AppText>
               <FlatList
                 horizontal
                 data={veiculos}
@@ -295,13 +295,26 @@ export function TelaHome({ navigation }: Props) {
                   return (
                     <TouchableOpacity
                       style={[estilos.cardVeiculo, ativo ? estilos.cardAtivo : estilos.cardInativo]}
-                      onPress={() => ativarVeiculo(item.id)}
+                      onPress={() => {
+                        if (ativo) {
+                          Alert.alert('Veículo ativo', 'Este veículo já está ativo.')
+                        } else {
+                          ativarVeiculo(item.id)
+                          Alert.alert('Veículo ativado!', 'Este veículo será usado nos próximos registros.')
+                        }
+                      }}
                       activeOpacity={0.75}
                       accessible
                       accessibilityLabel={`${item.marca} ${item.modelo} placa ${item.placa}${ativo ? ', ativo' : ''}`}
                       accessibilityRole="button"
                       accessibilityState={{ selected: ativo }}
                     >
+                      <Ionicons
+                        name={ativo ? 'checkmark-circle' : 'radio-button-off'}
+                        size={18}
+                        color={ativo ? CORES.secundaria : CORES.cinzaTexto}
+                        style={{ position: 'absolute', top: 6, right: 6 }}
+                      />
                       {item.tipo === 'carro'
                         ? <Ionicons name="car-outline" size={28} color={ativo ? CORES.secundaria : CORES.cinzaTexto} />
                         : <MaterialCommunityIcons name="motorbike" size={28} color={ativo ? CORES.secundaria : CORES.cinzaTexto} />
@@ -415,12 +428,12 @@ export function TelaHome({ navigation }: Props) {
           {/* Drawer header */}
           <View style={estilos.drawerHeader}>
             <View style={estilos.drawerLogomarcaWrap}>
-              <Logomarca1 width={140} height={70} color="white" />
+              <Logomarca1 width={55} height={28} color="white" />
             </View>
             {estaLogado && (
               <AvatarCircular
                 uri={proprietario?.fotoPerfil}
-                size={64}
+                size={44}
                 borderWidth={2}
                 borderColor={CORES.secundaria}
               />
@@ -437,7 +450,7 @@ export function TelaHome({ navigation }: Props) {
           </View>
 
           {/* Drawer items */}
-          <View style={estilos.drawerItens}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={estilos.drawerItens} showsVerticalScrollIndicator={false}>
             {itensDrawer.map(({ label, Icone, onPress, vermelho }) => (
               <TouchableOpacity
                 key={label}
@@ -453,7 +466,7 @@ export function TelaHome({ navigation }: Props) {
                 </AppText>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         </SafeAreaView>
       </Animated.View>
     </View>
@@ -695,8 +708,8 @@ const estilos = StyleSheet.create({
   },
   badgeAtivo: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    bottom: 6,
+    left: 6,
     backgroundColor: '#2ECC71',
     borderRadius: 8,
     paddingHorizontal: 6,
@@ -784,26 +797,27 @@ const estilos = StyleSheet.create({
   },
   drawerHeader: {
     backgroundColor: CORES.primariaMedio,
-    padding: ESPACOS.lg,
-    paddingTop: ESPACOS.xl,
+    padding: ESPACOS.sm,
+    paddingTop: ESPACOS.md,
+    maxHeight: 160,
     alignItems: 'center',
-    gap: ESPACOS.xs,
+    gap: 2,
     borderBottomWidth: 1,
     borderBottomColor: CORES.primariaClaro,
   },
   drawerLogomarcaWrap: {
     alignItems: 'center',
-    marginBottom: ESPACOS.sm,
+    marginBottom: 2,
   },
   drawerNome: {
     color: CORES.branco,
-    fontSize: FONTES.subtitulo,
+    fontSize: 15,
     fontWeight: '700',
-    marginTop: ESPACOS.sm,
+    marginTop: 2,
   },
   drawerEmail: {
     color: CORES.cinzaTexto,
-    fontSize: FONTES.pequena,
+    fontSize: 11,
   },
   drawerEmailLink: {
     color: CORES.secundaria,
@@ -818,7 +832,7 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: ESPACOS.md,
-    paddingVertical: ESPACOS.md,
+    paddingVertical: 10,
     paddingHorizontal: ESPACOS.sm,
     borderRadius: 10,
   },

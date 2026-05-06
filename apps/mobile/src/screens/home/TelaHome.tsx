@@ -31,7 +31,7 @@ const IconeNotificacao       = ({ width = 26, color }: IProps) => <Ionicons name
 const IconeRelatorio         = ({ width = 26, color }: IProps) => <Ionicons name="bar-chart-outline"      size={width} color={color ?? '#fff'} />
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const DRAWER_WIDTH = 280
+const DRAWER_WIDTH = Math.round(SCREEN_WIDTH * 0.72)
 const CAROUSEL_WIDTH = SCREEN_WIDTH - 32
 
 const slides = [
@@ -57,7 +57,7 @@ function NavIcon({ icone, lib, size, color }: { icone: string; lib?: LibIcon; si
 
 export function TelaHome({ navigation }: Props) {
   const { proprietario, estaLogado, logout } = useAuth()
-  const { veiculoAtivoId, ativarVeiculo } = useVeiculo()
+  const { veiculoAtivoId, ativarVeiculo, definirVeiculoAtivo } = useVeiculo()
   const { requireAuth } = useAuthGuard()
   const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? ''
 
@@ -300,6 +300,7 @@ export function TelaHome({ navigation }: Props) {
                           Alert.alert('Veículo ativo', 'Este veículo já está ativo.')
                         } else {
                           ativarVeiculo(item.id)
+                          definirVeiculoAtivo({ id: item.id, tipo: item.tipo, marca: item.marca, modelo: item.modelo, placa: item.placa })
                           Alert.alert('Veículo ativado!', 'Este veículo será usado nos próximos registros.')
                         }
                       }}
@@ -428,7 +429,7 @@ export function TelaHome({ navigation }: Props) {
           {/* Drawer header */}
           <View style={estilos.drawerHeader}>
             <View style={estilos.drawerLogomarcaWrap}>
-              <Logomarca1 width={55} height={28} color="white" />
+              <Logomarca1 width={65} height={65} color="white" />
             </View>
             {estaLogado && (
               <AvatarCircular
@@ -680,7 +681,7 @@ const estilos = StyleSheet.create({
   },
   cardVeiculo: {
     width: 130,
-    height: 100,
+    minHeight: 110,
     borderRadius: 14,
     backgroundColor: CORES.branco,
     padding: 12,
@@ -691,7 +692,7 @@ const estilos = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   cardAtivo:           { borderColor: '#2ECC71' },
   cardInativo:         { borderColor: '#E0E0E0' },
@@ -707,9 +708,8 @@ const estilos = StyleSheet.create({
     marginTop: 2,
   },
   badgeAtivo: {
-    position: 'absolute',
-    bottom: 6,
-    left: 6,
+    alignSelf: 'flex-start',
+    marginTop: 4,
     backgroundColor: '#2ECC71',
     borderRadius: 8,
     paddingHorizontal: 6,

@@ -450,6 +450,8 @@ export function TelaHome({ navigation }: Props) {
             }
           </View>
 
+          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginTop: 8 }} />
+
           {/* Drawer items */}
           <ScrollView style={{ flex: 1 }} contentContainerStyle={estilos.drawerItens} showsVerticalScrollIndicator={false}>
             {itensDrawer.map(({ label, Icone, onPress, vermelho }) => (
@@ -798,10 +800,8 @@ const estilos = StyleSheet.create({
   drawerHeader: {
     backgroundColor: CORES.primariaMedio,
     padding: ESPACOS.sm,
-    paddingTop: ESPACOS.md,
-    paddingBottom: 12,
-    minHeight: 140,
-    maxHeight: 160,
+    paddingTop: 40,
+    paddingBottom: 20,
     alignItems: 'center',
     gap: 2,
     borderBottomWidth: 1,

@@ -18,7 +18,9 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Permitir que o ANOTAÍ acesse sua câmera para registrar fotos de serviços e peças.",
         "NSPhotoLibraryUsageDescription": "Permitir que o ANOTAÍ acesse suas fotos para registrar imagens de serviços e peças.",
-        "NSPhotoLibraryAddUsageDescription": "Permitir que o ANOTAÍ salve fotos na sua galeria."
+        "NSPhotoLibraryAddUsageDescription": "Permitir que o ANOTAÍ salve fotos na sua galeria.",
+        "NSMicrophoneUsageDescription": "O ANOTAÍ precisa do microfone para reconhecimento de voz nos campos de texto.",
+        "NSSpeechRecognitionUsageDescription": "O ANOTAÍ precisa de acesso ao reconhecimento de voz para preencher campos por fala."
       }
     },
     "android": {
@@ -31,7 +33,8 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {

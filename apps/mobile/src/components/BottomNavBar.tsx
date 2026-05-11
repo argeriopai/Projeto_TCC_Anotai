@@ -63,3 +63,6 @@ const estilos = StyleSheet.create({
   abaLabel:      { fontSize: 13, color: CORES.cinzaTexto },
   abaLabelAtivo: { color: CORES.secundaria, fontWeight: '600' },
 })
+
+
+

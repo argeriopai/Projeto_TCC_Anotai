@@ -53,8 +53,14 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   const [veiculoId,          setVeiculoId]          = useState<string | null>(edit?.veiculoId ?? null)
   const [carregandoVeiculos, setCarregandoVeiculos] = useState(true)
 
-  const { isRecording, startRecording, stopRecording } = useVoiceInput()
+  const { isRecording, transcript, startRecording, stopRecording } = useVoiceInput()
   const [gravandoMensagem, setGravandoMensagem] = useState(false)
+
+  useEffect(() => {
+    if (!transcript) return
+    setMensagem(prev => prev ? prev + ' ' + transcript : transcript)
+    setGravandoMensagem(false)
+  }, [transcript])
 
   useEffect(() => {
     if (!edit && !veiculoAtivo) {

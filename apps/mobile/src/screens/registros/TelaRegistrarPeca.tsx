@@ -62,8 +62,17 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
   const [carregandoVeiculos, setCarregandoVeiculos] = useState(true)
 
   // ── Voz ───────────────────────────────────────────────────────────────────
-  const { isRecording, startRecording, stopRecording } = useVoiceInput()
+  const { isRecording, transcript, startRecording, stopRecording } = useVoiceInput()
   const [campoVoz, setCampoVoz] = useState<CampoVoz>(null)
+
+  useEffect(() => {
+    if (!transcript) return
+    if (campoVoz === 'nome')
+      setNome(prev => prev ? prev + ' ' + transcript : transcript)
+    else if (campoVoz === 'descricao')
+      setDescricao(prev => prev ? prev + ' ' + transcript : transcript)
+    setCampoVoz(null)
+  }, [transcript, campoVoz])
 
   useEffect(() => {
     if (!edit && !veiculoAtivo) {

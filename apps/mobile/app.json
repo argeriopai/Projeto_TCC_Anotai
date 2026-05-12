@@ -34,14 +34,24 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "@react-native-voice/voice",
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "Permitir uso do microfone para comandos de voz",
+          "speechRecognitionPermission": "Permitir reconhecimento de voz"
+        }
+      ],
       "@react-native-community/datetimepicker",
       [
         "expo-image-picker",
@@ -58,6 +68,11 @@
           "isAccessMediaLocationEnabled": true
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b8578862-c0a6-4618-b2b6-b5d4916c5c87"
+      }
+    }
   }
 }

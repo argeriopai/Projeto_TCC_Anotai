@@ -320,10 +320,10 @@ export function TelaHome({ navigation }: Props) {
                         : <MaterialCommunityIcons name="motorbike" size={28} color={ativo ? CORES.secundaria : CORES.cinzaTexto} />
                       }
                       <AppText style={[estilos.cardVeiculoPlaca, ativo && { color: CORES.secundaria }]} numberOfLines={1}>
-                        {item.placa}
+                        {item.marca} {item.modelo}
                       </AppText>
                       <AppText style={estilos.cardVeiculoModelo} numberOfLines={1}>
-                        {item.modelo}
+                        {item.placa}
                       </AppText>
                       {ativo && (
                         <View style={estilos.badgeAtivo}>

@@ -1,14 +1,14 @@
 import React, { useState, useCallback } from 'react'
 import {
   View, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, Alert,
+  ActivityIndicator,
 } from 'react-native'
 import { AppText } from '../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import * as Notifications from 'expo-notifications'
-import { cancelarNotificacao, listarNotificacoesAgendadas } from '../services/notificacoes'
+import { listarNotificacoesAgendadas } from '../services/notificacoes'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 
 interface Props { navigation: any }
@@ -48,43 +48,6 @@ export function TelaNotificacoesPush({ navigation }: Props) {
     }
   }
 
-  function handleCancelar(id: string, titulo: string) {
-    Alert.alert(
-      'Cancelar notificação',
-      `Deseja cancelar o lembrete "${titulo}"?`,
-      [
-        { text: 'Não', style: 'cancel' },
-        {
-          text: 'Sim, cancelar',
-          style: 'destructive',
-          onPress: async () => {
-            await cancelarNotificacao(id)
-            setLista(prev => prev.filter(n => n.identifier !== id))
-          },
-        },
-      ]
-    )
-  }
-
-  function handleCancelarTodos() {
-    if (lista.length === 0) return
-    Alert.alert(
-      'Cancelar todos',
-      'Deseja cancelar todos os lembretes agendados?',
-      [
-        { text: 'Não', style: 'cancel' },
-        {
-          text: 'Cancelar todos',
-          style: 'destructive',
-          onPress: async () => {
-            await Notifications.cancelAllScheduledNotificationsAsync()
-            setLista([])
-          },
-        },
-      ]
-    )
-  }
-
   return (
     <SafeAreaView style={es.safe} edges={['top']}>
 
@@ -99,16 +62,6 @@ export function TelaNotificacoesPush({ navigation }: Props) {
         >
           <Ionicons name="arrow-back" size={24} color={CORES.branco} />
         </TouchableOpacity>
-        {lista.length > 0 && (
-          <TouchableOpacity
-            onPress={handleCancelarTodos}
-            accessible
-            accessibilityLabel="Cancelar todos os lembretes"
-            accessibilityRole="button"
-          >
-            <AppText style={es.btnCancelarTodos}>Cancelar todos</AppText>
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* TÍTULO */}
@@ -138,11 +91,19 @@ export function TelaNotificacoesPush({ navigation }: Props) {
         <ScrollView style={es.scroll} contentContainerStyle={es.scrollConteudo} showsVerticalScrollIndicator={false}>
           <AppText style={es.contador}>{lista.length} lembrete{lista.length !== 1 ? 's' : ''} agendado{lista.length !== 1 ? 's' : ''}</AppText>
           {lista.map(item => {
-            const titulo = item.content.title?.replace('🔔 ', '') ?? 'Lembrete'
-            const corpo  = item.content.body ?? ''
+            const titulo  = item.content.title?.replace('🔔 ', '') ?? 'Lembrete'
+            const corpo   = item.content.body ?? ''
             const dataStr = (item.content.data as any)?.dataAgendada
             return (
-              <View key={item.identifier} style={es.card}>
+              <TouchableOpacity
+                key={item.identifier}
+                style={es.card}
+                onPress={() => navigation.navigate('Revisoes')}
+                activeOpacity={0.75}
+                accessible
+                accessibilityLabel={`Lembrete: ${titulo}. Toque para ver as revisões.`}
+                accessibilityRole="button"
+              >
                 <View style={es.cardIcone}>
                   <Ionicons name="notifications" size={22} color={CORES.secundaria} />
                 </View>
@@ -158,16 +119,8 @@ export function TelaNotificacoesPush({ navigation }: Props) {
                     </View>
                   )}
                 </View>
-                <TouchableOpacity
-                  style={es.btnExcluir}
-                  onPress={() => handleCancelar(item.identifier, titulo)}
-                  accessible
-                  accessibilityLabel={`Cancelar lembrete ${titulo}`}
-                  accessibilityRole="button"
-                >
-                  <Ionicons name="trash-outline" size={18} color={CORES.erro} />
-                </TouchableOpacity>
-              </View>
+                <Ionicons name="chevron-forward" size={18} color={CORES.cinzaTexto} />
+              </TouchableOpacity>
             )
           })}
         </ScrollView>
@@ -186,11 +139,6 @@ const es = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: ESPACOS.lg,
     paddingVertical: ESPACOS.md,
-  },
-  btnCancelarTodos: {
-    color: CORES.erro,
-    fontSize: FONTES.pequena,
-    fontWeight: '600',
   },
 
   tituloRow: {
@@ -217,7 +165,7 @@ const es = StyleSheet.create({
   btnAdicionar:      { backgroundColor: CORES.secundaria, borderRadius: 20, paddingHorizontal: ESPACOS.lg, paddingVertical: ESPACOS.sm },
   btnAdicionarTexto: { color: CORES.branco, fontSize: FONTES.normal, fontWeight: '700' },
 
-  scroll:        { flex: 1, backgroundColor: CORES.cinzaClaro },
+  scroll:         { flex: 1, backgroundColor: CORES.cinzaClaro },
   scrollConteudo: { padding: ESPACOS.md, paddingBottom: ESPACOS.xxl },
 
   contador: {
@@ -256,9 +204,4 @@ const es = StyleSheet.create({
   cardCorpo:    { fontSize: FONTES.pequena, color: CORES.textoSecundario, marginTop: 2, lineHeight: 17 },
   cardDataRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: ESPACOS.xs },
   cardData:     { fontSize: FONTES.pequena, color: CORES.textoSecundario },
-
-  btnExcluir: {
-    padding: ESPACOS.sm,
-    marginLeft: ESPACOS.xs,
-  },
 })

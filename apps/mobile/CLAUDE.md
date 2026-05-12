@@ -12,11 +12,15 @@
 
 ## Estrutura principal
 apps/mobile/
+  assets/           → icon.png, adaptive-icon.png, splash-icon.png, favicon.png (placeholders)
   src/
-    contexts/       → AuthContext, VeiculoContext, VLibrasContext
-    components/     → VLibrasFloat, VLibrasText, ...
-    navigation/     → RootNavigator, DrawerNavigator, BottomTabNavigator
+    assets/icons/   → LOGOMARCA_1.svg (único SVG em uso)
+    contexts/       → AuthContext, VeiculoContext, AcessibilidadeContext
+    components/     → AppText, AvatarCircular, BotaoMic, IndicadorGravando, CampoData, BottomNavBar
+    hooks/          → useVoiceInput, useAuthGuard
+    navigation/     → RootNavigator
     screens/        → todas as telas
+    services/       → api.ts, notificacoes.ts
     constants/      → cores.ts (CORES, FONTES, ESPACOS)
 
 ## Sprints concluídos
@@ -78,7 +82,42 @@ apps/mobile/
 - Drawer header: paddingTop 40, paddingBottom 20, removidos minHeight/maxHeight — altura automática ✅
 - Separador visual (height 1, rgba branco 15%, marginTop 8) entre header e lista de itens ✅
 
-## Próximo passo — Sprint 6
+### 5F — Comando de voz
+- useVoiceInput.ts: implementação real com @react-native-voice/voice v3.2.4 ✅
+- Guard defensivo (try/require): funciona no Expo Go (alert) e no build nativo (voz real) ✅
+- TelaRegistrarServico: mic no campo Descrição ✅
+- TelaRegistrarPeca: mic independente em Nome da peça e Descrição (campoVoz state) ✅
+- TelaRegistrarNotificacao: mic no campo Mensagem ✅
+- Timeout automático de 10s na gravação ✅
+- app.json: permissões de microfone adicionadas (iOS infoPlist + Android RECORD_AUDIO) ✅
+- BotaoMic e IndicadorGravando: componentes de UI para mic (pulse animation + "Gravando...") ✅
+
+### 5G — Relatório de despesas (reescrita)
+- TelaRelatorio: filtro por veículo ativo (VeiculoContext) ✅
+- Tabs "Juntos" (serviços+peças combinados) e "Separados" (seções independentes) ✅
+- Agrupamento mensal com cabeçalho, itens e subtotal por mês ✅
+- Cards de total: Serviços (construct-outline), Peças (cog-outline), Total Geral ✅
+- Clique em item navega para tela de consulta correspondente (Servicos/Pecas) ✅
+
+### 5H — Pré-build: limpeza e assets
+- Auditoria completa: 31 telas, 8 hooks/serviços, 4 contextos, 8 componentes verificados ✅
+- 20 SVGs ociosos deletados de src/assets/icons/ (mantido apenas LOGOMARCA_1.svg) ✅
+- TelaHome: import LogomarcaIcone1 removido; 4 cores '#2ECC71' → CORES.secundaria ✅
+- cores.ts: BORDAS e CORES.verdeSlogan removidos (nunca utilizados) ✅
+- TelaSplash: import LOGOMARCA_ICONE1.svg (deletado) → LOGOMARCA_1.svg ✅
+- assets/ criada com 4 PNGs placeholder (icon, adaptive-icon, splash-icon, favicon) ✅
+  → substituir por assets definitivos do designer antes do build final
+
+## Sprint 6 — EM ANDAMENTO
+
+### 6A — Notificações e card de veículo
+- TelaNotificacoesPush: removida lixeira individual e botão "Cancelar todos" ✅
+- TelaNotificacoesPush: card vira TouchableOpacity → navega para 'Revisoes' ao tocar ✅
+  (exclusão/edição de revisão ocorre apenas na tela de revisões)
+- TelaHome: card de veículo exibe marca + modelo na linha principal e placa na linha secundária ✅
+  (antes mostrava placa em destaque e modelo abaixo; agora segue o padrão dos chips das telas de registro)
+
+## Próximo passo — Sprint 6B
 A definir.
 
 ## Convenções do projeto

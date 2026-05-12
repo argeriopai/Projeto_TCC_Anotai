@@ -22,7 +22,6 @@ import { buscarFotos, salvarFotos, temFotos } from '../../utils/fotosStorage'
 interface Props { navigation: any; route: any }
 
 type VeiculoItem = { id: string; label: string }
-type CampoVoz    = 'nome' | 'descricao' | null
 
 function parseDateStr(dateStr: string): Date {
   const [d, m, y] = dateStr.split('/').map(Number)
@@ -62,17 +61,12 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
   const [carregandoVeiculos, setCarregandoVeiculos] = useState(true)
 
   // ── Voz ───────────────────────────────────────────────────────────────────
-  const { isRecording, transcript, startRecording, stopRecording } = useVoiceInput()
-  const [campoVoz, setCampoVoz] = useState<CampoVoz>(null)
-
-  useEffect(() => {
-    if (!transcript) return
-    if (campoVoz === 'nome')
-      setNome(prev => prev ? prev + ' ' + transcript : transcript)
-    else if (campoVoz === 'descricao')
-      setDescricao(prev => prev ? prev + ' ' + transcript : transcript)
-    setCampoVoz(null)
-  }, [transcript, campoVoz])
+  const { gravando: gravandoNome, iniciarGravacao: iniciarNome, pararGravacao: pararNome } = useVoiceInput(
+    text => setNome(prev => prev ? prev + ' ' + text : text)
+  )
+  const { gravando: gravandoDesc, iniciarGravacao: iniciarDesc, pararGravacao: pararDesc } = useVoiceInput(
+    text => setDescricao(prev => prev ? prev + ' ' + text : text)
+  )
 
   useEffect(() => {
     if (!edit && !veiculoAtivo) {
@@ -136,15 +130,6 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
     }
   }
 
-  async function toggleMic(campo: CampoVoz) {
-    if (isRecording && campoVoz === campo) {
-      await stopRecording()
-      setCampoVoz(null)
-    } else {
-      setCampoVoz(campo)
-      await startRecording()
-    }
-  }
 
   function validar(): boolean {
     const e: Record<string, string> = {}
@@ -275,9 +260,9 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
                 blurOnSubmit={false}
                 onSubmitEditing={() => descricaoRef.current?.focus()}
               />
-              <BotaoMic gravando={isRecording && campoVoz === 'nome'} onPress={() => toggleMic('nome')} />
+              <BotaoMic gravando={gravandoNome} onPress={() => gravandoNome ? pararNome() : iniciarNome()} />
             </View>
-            {isRecording && campoVoz === 'nome' && <IndicadorGravando />}
+            {gravandoNome && <IndicadorGravando />}
             {!!erros.nome && <AppText style={estilos.textoErro}>{erros.nome}</AppText>}
           </View>
 
@@ -285,9 +270,9 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
           <View style={estilos.campo}>
             <View style={estilos.labelRow}>
               <AppText style={estilos.label}>Descrição</AppText>
-              <BotaoMic gravando={isRecording && campoVoz === 'descricao'} onPress={() => toggleMic('descricao')} />
+              <BotaoMic gravando={gravandoDesc} onPress={() => gravandoDesc ? pararDesc() : iniciarDesc()} />
             </View>
-            {isRecording && campoVoz === 'descricao' && <IndicadorGravando />}
+            {gravandoDesc && <IndicadorGravando />}
             <TextInput
               ref={descricaoRef}
               style={estilos.inputMultiline}

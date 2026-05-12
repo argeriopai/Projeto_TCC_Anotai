@@ -45,14 +45,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "./plugins/withVoiceFix",
-      [
-        "@react-native-voice/voice",
-        {
-          "microphonePermission": "Permitir uso do microfone para comandos de voz",
-          "speechRecognitionPermission": "Permitir reconhecimento de voz"
-        }
-      ],
       "@react-native-community/datetimepicker",
       [
         "expo-image-picker",

@@ -65,14 +65,9 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
   const [veiculoId,          setVeiculoId]          = useState<string | null>(edit?.veiculoId ?? null)
   const [carregandoVeiculos, setCarregandoVeiculos] = useState(true)
 
-  const { isRecording, transcript, startRecording, stopRecording } = useVoiceInput()
-  const [gravandoDescricao, setGravandoDescricao] = useState(false)
-
-  useEffect(() => {
-    if (!transcript) return
-    setDescricao(prev => prev ? prev + ' ' + transcript : transcript)
-    setGravandoDescricao(false)
-  }, [transcript])
+  const { gravando: gravandoDescricao, iniciarGravacao, pararGravacao } = useVoiceInput(
+    text => setDescricao(prev => prev ? prev + ' ' + text : text)
+  )
 
   useEffect(() => {
     if (!edit && !veiculoAtivo) {
@@ -115,12 +110,10 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
   }, [])
 
   async function toggleMic() {
-    if (isRecording && gravandoDescricao) {
-      await stopRecording()
-      setGravandoDescricao(false)
+    if (gravandoDescricao) {
+      await pararGravacao()
     } else {
-      setGravandoDescricao(true)
-      await startRecording()
+      await iniciarGravacao()
     }
   }
 
@@ -288,9 +281,9 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
           <View style={estilos.campo}>
             <View style={estilos.labelRow}>
               <AppText style={estilos.label}>Descrição</AppText>
-              <BotaoMic gravando={isRecording && gravandoDescricao} onPress={toggleMic} />
+              <BotaoMic gravando={gravandoDescricao} onPress={toggleMic} />
             </View>
-            {isRecording && gravandoDescricao && <IndicadorGravando />}
+            {gravandoDescricao && <IndicadorGravando />}
             <TextInput
               ref={descricaoRef}
               style={[estilos.input, { height: 80, textAlignVertical: 'top', paddingTop: ESPACOS.sm }]}

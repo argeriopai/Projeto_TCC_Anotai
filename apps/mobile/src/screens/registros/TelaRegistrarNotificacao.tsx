@@ -53,14 +53,9 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   const [veiculoId,          setVeiculoId]          = useState<string | null>(edit?.veiculoId ?? null)
   const [carregandoVeiculos, setCarregandoVeiculos] = useState(true)
 
-  const { isRecording, transcript, startRecording, stopRecording } = useVoiceInput()
-  const [gravandoMensagem, setGravandoMensagem] = useState(false)
-
-  useEffect(() => {
-    if (!transcript) return
-    setMensagem(prev => prev ? prev + ' ' + transcript : transcript)
-    setGravandoMensagem(false)
-  }, [transcript])
+  const { gravando: gravandoMensagem, iniciarGravacao, pararGravacao } = useVoiceInput(
+    text => setMensagem(prev => prev ? prev + ' ' + text : text)
+  )
 
   useEffect(() => {
     if (!edit && !veiculoAtivo) {
@@ -95,12 +90,10 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   }, [])
 
   async function toggleMic() {
-    if (isRecording && gravandoMensagem) {
-      await stopRecording()
-      setGravandoMensagem(false)
+    if (gravandoMensagem) {
+      await pararGravacao()
     } else {
-      setGravandoMensagem(true)
-      await startRecording()
+      await iniciarGravacao()
     }
   }
 
@@ -230,9 +223,9 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
           <View style={estilos.campo}>
             <View style={estilos.labelRow}>
               <AppText style={estilos.label}>Mensagem <AppText style={estilos.obrig}>*</AppText></AppText>
-              <BotaoMic gravando={isRecording && gravandoMensagem} onPress={toggleMic} />
+              <BotaoMic gravando={gravandoMensagem} onPress={toggleMic} />
             </View>
-            {isRecording && gravandoMensagem && <IndicadorGravando />}
+            {gravandoMensagem && <IndicadorGravando />}
             <TextInput
               style={[
                 estilos.input,

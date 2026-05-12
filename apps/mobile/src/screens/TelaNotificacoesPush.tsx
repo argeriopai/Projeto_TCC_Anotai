@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   View, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator,
@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import * as Notifications from 'expo-notifications'
-import { listarNotificacoesAgendadas } from '../services/notificacoes'
+import { listarNotificacoesAgendadas, cancelarTodasNotificacoes } from '../services/notificacoes'
+import { useAuth } from '../contexts/AuthContext'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 
 interface Props { navigation: any }
@@ -22,8 +23,16 @@ function formatarDataHora(isoString: string): string {
 }
 
 export function TelaNotificacoesPush({ navigation }: Props) {
+  const { estaLogado } = useAuth()
   const [lista,      setLista]      = useState<Notifications.NotificationRequest[]>([])
   const [carregando, setCarregando] = useState(true)
+
+  // Limpa notificações órfãs ao montar a tela em modo visitante
+  useEffect(() => {
+    if (!estaLogado) {
+      cancelarTodasNotificacoes().then(() => setLista([]))
+    }
+  }, [estaLogado])
 
   useFocusEffect(
     useCallback(() => {

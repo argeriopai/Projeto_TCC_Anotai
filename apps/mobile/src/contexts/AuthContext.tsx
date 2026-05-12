@@ -44,9 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           api.defaults.headers.common['Authorization'] = `Bearer ${t}`
           setToken(t)
           setProprietario(JSON.parse(u))
+        } else {
+          // Sem sessão — cancela notificações órfãs de sessões anteriores
+          await cancelarTodasNotificacoes()
         }
       } catch {
-        // Sessão corrompida — ignora e permite acesso como visitante
+        // Sessão corrompida — cancela órfãs e permite acesso como visitante
+        await cancelarTodasNotificacoes()
       } finally {
         setCarregando(false)
       }

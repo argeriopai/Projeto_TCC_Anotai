@@ -67,6 +67,14 @@
           "savePhotosPermission": "Permitir que o ANOTAÍ salve fotos.",
           "isAccessMediaLocationEnabled": true
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableJetifier": true
+          }
+        }
       ]
     ],
     "extra": {

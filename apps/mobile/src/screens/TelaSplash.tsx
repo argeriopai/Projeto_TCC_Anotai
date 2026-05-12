@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { View, Animated, StyleSheet } from 'react-native'
 import { AppText } from '../components/AppText'
-import LogomarcaIcone from '../assets/icons/LOGOMARCA_ICONE1.svg'
 import Logomarca1 from '../assets/icons/LOGOMARCA_1.svg'
 
 interface Props {
@@ -29,7 +28,7 @@ export function TelaSplash({ navigation }: Props) {
     <View style={estilos.container}>
       {/* Marca d'água de fundo */}
       <View style={estilos.marcaDagua}>
-        <LogomarcaIcone width={400} height={400} color="white" />
+        <Logomarca1 width={400} height={400} color="white" />
       </View>
 
       {/* Conteúdo com fade-in */}

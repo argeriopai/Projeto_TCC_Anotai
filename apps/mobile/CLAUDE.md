@@ -83,14 +83,13 @@ apps/mobile/
 - Separador visual (height 1, rgba branco 15%, marginTop 8) entre header e lista de itens ✅
 
 ### 5F — Comando de voz
-- useVoiceInput.ts: implementação real com @react-native-voice/voice v3.2.4 ✅
-- Guard defensivo (try/require): funciona no Expo Go (alert) e no build nativo (voz real) ✅
+- useVoiceInput.ts: stub com interface useVoiceInput(onResult) → { gravando, iniciarGravacao, pararGravacao } ✅
+  (@react-native-voice/voice removido — conflito androidx impossível de resolver; stub exibe Alert informativo)
 - TelaRegistrarServico: mic no campo Descrição ✅
-- TelaRegistrarPeca: mic independente em Nome da peça e Descrição (campoVoz state) ✅
+- TelaRegistrarPeca: 2 instâncias do hook, mic independente em Nome da peça e Descrição ✅
 - TelaRegistrarNotificacao: mic no campo Mensagem ✅
-- Timeout automático de 10s na gravação ✅
-- app.json: permissões de microfone adicionadas (iOS infoPlist + Android RECORD_AUDIO) ✅
 - BotaoMic e IndicadorGravando: componentes de UI para mic (pulse animation + "Gravando...") ✅
+- app.json: plugin @react-native-voice/voice e withVoiceFix removidos ✅
 
 ### 5G — Relatório de despesas (reescrita)
 - TelaRelatorio: filtro por veículo ativo (VeiculoContext) ✅
@@ -108,16 +107,23 @@ apps/mobile/
 - assets/ criada com 4 PNGs placeholder (icon, adaptive-icon, splash-icon, favicon) ✅
   → substituir por assets definitivos do designer antes do build final
 
-## Sprint 6 — EM ANDAMENTO
+## Sprint 6 — CONCLUÍDO
 
 ### 6A — Notificações e card de veículo
 - TelaNotificacoesPush: removida lixeira individual e botão "Cancelar todos" ✅
 - TelaNotificacoesPush: card vira TouchableOpacity → navega para 'Revisoes' ao tocar ✅
   (exclusão/edição de revisão ocorre apenas na tela de revisões)
 - TelaHome: card de veículo exibe marca + modelo na linha principal e placa na linha secundária ✅
-  (antes mostrava placa em destaque e modelo abaixo; agora segue o padrão dos chips das telas de registro)
+  (segue o padrão dos chips das telas de registro)
 
-## Próximo passo — Sprint 6B
+### 6B — Notificações órfãs
+- notificacoes.ts: nova função cancelarTodasNotificacoes() ✅
+- AuthContext logout(): cancela todas as notificações antes de limpar AsyncStorage ✅
+- AuthContext restaurarSessao(): cancela notificações ao iniciar sem sessão (visitante) ✅
+- AuthContext restaurarSessao(): cancela notificações em caso de sessão corrompida (catch) ✅
+- TelaNotificacoesPush: useEffect cancela notificações órfãs ao montar em modo visitante ✅
+
+## Próximo passo — Sprint 7
 A definir.
 
 ## Convenções do projeto

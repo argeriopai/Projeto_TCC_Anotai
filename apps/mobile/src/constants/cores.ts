@@ -10,7 +10,6 @@ export const CORES = {
   // Secundária — verde ANOTAÍ
   secundaria:      '#2ECC71',
   secundariaEscuro:'#27AE60',
-  verdeSlogan:     '#33CC33',
 
   // Neutros
   branco:          '#FFFFFF',
@@ -53,9 +52,3 @@ export const ESPACOS = {
   xxl: 48,
 }
 
-export const BORDAS = {
-  pequena: 4,
-  media:   8,
-  grande:  16,
-  total:   999,
-}

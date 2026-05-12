@@ -14,8 +14,7 @@ import { listarCarrosApi, listarMotosApi, Carro, Moto } from '../../services/api
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 
 // Logomarca
-import LogomarcaIcone1 from '../../assets/icons/LOGOMARCA_ICONE1.svg'
-import Logomarca1      from '../../assets/icons/LOGOMARCA_1.svg'
+import Logomarca1 from '../../assets/icons/LOGOMARCA_1.svg'
 
 import { AvatarCircular } from '../../components/AvatarCircular'
 
@@ -561,7 +560,7 @@ const estilos = StyleSheet.create({
     marginTop: ESPACOS.xs,
   },
   carrosselSubtituloVerde: {
-    color: '#2ECC71',
+    color: CORES.secundaria,
   },
   carrosselDots: {
     position: 'absolute',
@@ -579,7 +578,7 @@ const estilos = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.4)',
   },
   dotAtivo: {
-    backgroundColor: '#2ECC71',
+    backgroundColor: CORES.secundaria,
   },
   subtituloAcoes: {
     fontSize: FONTES.media,
@@ -696,7 +695,7 @@ const estilos = StyleSheet.create({
     shadowRadius: 4,
     justifyContent: 'flex-start',
   },
-  cardAtivo:           { borderColor: '#2ECC71' },
+  cardAtivo:           { borderColor: CORES.secundaria },
   cardInativo:         { borderColor: '#E0E0E0' },
   cardVeiculoPlaca: {
     fontSize: FONTES.normal,
@@ -712,7 +711,7 @@ const estilos = StyleSheet.create({
   badgeAtivo: {
     alignSelf: 'flex-start',
     marginTop: 4,
-    backgroundColor: '#2ECC71',
+    backgroundColor: CORES.secundaria,
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 2,

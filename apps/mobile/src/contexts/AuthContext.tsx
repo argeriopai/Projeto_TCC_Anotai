@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '../services/api'
+import { cancelarTodasNotificacoes } from '../services/notificacoes'
 
 interface Proprietario {
   id: string
@@ -73,7 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     api.defaults.headers.common['Authorization'] = ''
     setToken(null)
     setProprietario(null)
-    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY])
+    await Promise.all([
+      AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]),
+      cancelarTodasNotificacoes(),
+    ])
   }
 
   async function atualizarPerfil(dados: Partial<Pick<Proprietario, 'nome' | 'apelido' | 'telefone'>>) {

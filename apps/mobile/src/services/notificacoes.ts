@@ -55,3 +55,7 @@ export async function cancelarNotificacao(id: string): Promise<void> {
 export async function listarNotificacoesAgendadas(): Promise<Notifications.NotificationRequest[]> {
   return Notifications.getAllScheduledNotificationsAsync()
 }
+
+export async function cancelarTodasNotificacoes(): Promise<void> {
+  await Notifications.cancelAllScheduledNotificationsAsync()
+}

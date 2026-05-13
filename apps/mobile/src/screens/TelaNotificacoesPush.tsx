@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   View, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, Alert,
@@ -10,6 +10,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import * as Notifications from 'expo-notifications'
 import { cancelarNotificacao, listarNotificacoesAgendadas } from '../services/notificacoes'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
+import { useAuth } from '../contexts/AuthContext'
 
 interface Props { navigation: any }
 
@@ -22,16 +23,22 @@ function formatarDataHora(isoString: string): string {
 }
 
 export function TelaNotificacoesPush({ navigation }: Props) {
+  const { estaLogado } = useAuth()
   const [lista,      setLista]      = useState<Notifications.NotificationRequest[]>([])
   const [carregando, setCarregando] = useState(true)
+
+  useEffect(() => {
+    if (!estaLogado) setLista([])
+  }, [estaLogado])
 
   useFocusEffect(
     useCallback(() => {
       carregarLista()
-    }, [])
+    }, [estaLogado])
   )
 
   async function carregarLista() {
+    if (!estaLogado) { setLista([]); setCarregando(false); return }
     setCarregando(true)
     try {
       const agendadas = await listarNotificacoesAgendadas()

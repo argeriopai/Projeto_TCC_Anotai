@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { listarCarrosApi, listarMotosApi } from '../services/api'
+import { useAuth } from './AuthContext'
 
 const STORAGE_KEY = '@anotai:veiculo_ativo'
 
@@ -22,8 +23,18 @@ interface VeiculoContextData {
 const VeiculoContext = createContext<VeiculoContextData>({} as VeiculoContextData)
 
 export function VeiculoProvider({ children }: { children: React.ReactNode }) {
+  const { estaLogado, carregando } = useAuth()
   const [veiculoAtivo,   setVeiculoAtivoState] = useState<VeiculoAtivo | null>(null)
   const [veiculoAtivoId, setVeiculoAtivoId]    = useState<string | null>(null)
+
+  useEffect(() => {
+    if (carregando) return
+    if (!estaLogado) {
+      setVeiculoAtivoState(null)
+      setVeiculoAtivoId(null)
+      AsyncStorage.multiRemove([STORAGE_KEY, '@anotai:veiculoAtivo'])
+    }
+  }, [estaLogado, carregando])
 
   useEffect(() => {
     async function carregarEValidar() {

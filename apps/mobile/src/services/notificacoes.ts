@@ -1,5 +1,30 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
+
+const NOTIF_MAP_KEY = '@anotai:notif_map'
+
+export async function salvarMapeamento(notificacaoId: string, osNotifId: string): Promise<void> {
+  const raw = await AsyncStorage.getItem(NOTIF_MAP_KEY)
+  const mapa: Record<string, string> = raw ? JSON.parse(raw) : {}
+  mapa[notificacaoId] = osNotifId
+  await AsyncStorage.setItem(NOTIF_MAP_KEY, JSON.stringify(mapa))
+}
+
+export async function buscarOsNotifId(notificacaoId: string): Promise<string | null> {
+  const raw = await AsyncStorage.getItem(NOTIF_MAP_KEY)
+  if (!raw) return null
+  const mapa: Record<string, string> = JSON.parse(raw)
+  return mapa[notificacaoId] ?? null
+}
+
+export async function removerMapeamento(notificacaoId: string): Promise<void> {
+  const raw = await AsyncStorage.getItem(NOTIF_MAP_KEY)
+  if (!raw) return
+  const mapa: Record<string, string> = JSON.parse(raw)
+  delete mapa[notificacaoId]
+  await AsyncStorage.setItem(NOTIF_MAP_KEY, JSON.stringify(mapa))
+}
 
 export async function solicitarPermissao(): Promise<boolean> {
   if (Platform.OS === 'android') {

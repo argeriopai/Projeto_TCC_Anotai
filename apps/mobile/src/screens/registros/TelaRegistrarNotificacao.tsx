@@ -7,7 +7,7 @@ import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { listarCarrosApi, listarMotosApi, registrarNotificacaoApi, editarNotificacaoApi, Carro, Moto, Notificacao } from '../../services/api'
-import { agendarNotificacao } from '../../services/notificacoes'
+import { agendarNotificacao, cancelarNotificacao, salvarMapeamento, buscarOsNotifId } from '../../services/notificacoes'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { useAuth } from '../../contexts/AuthContext'
 import { AvatarCircular } from '../../components/AvatarCircular'
@@ -122,12 +122,17 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
       try {
         if (edit) {
           await editarNotificacaoApi(edit.id, payload)
+          const osAntigo = await buscarOsNotifId(edit.id)
+          if (osAntigo) await cancelarNotificacao(osAntigo)
+          const novoNotifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: edit.id })
+          if (novoNotifId) await salvarMapeamento(edit.id, novoNotifId)
           Alert.alert('Sucesso!', 'Revisão atualizada com sucesso.', [
             { text: 'OK', onPress: () => navigation.goBack() },
           ])
         } else {
           const apiRes = await registrarNotificacaoApi(payload)
           const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: apiRes.data.id })
+          if (notifId) await salvarMapeamento(apiRes.data.id, notifId)
           const msg = notifId
             ? 'Revisão registrada! Você receberá uma notificação no dia agendado.'
             : 'Revisão registrada com sucesso.'

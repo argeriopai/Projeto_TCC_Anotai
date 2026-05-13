@@ -11,6 +11,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
 import { useVeiculo } from '../../contexts/VeiculoContext'
 import { listarNotificacoesApi, excluirNotificacaoApi, atualizarNotificacaoApi, Notificacao } from '../../services/api'
+import { cancelarNotificacao, buscarOsNotifId, removerMapeamento } from '../../services/notificacoes'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { BottomNavBar } from '../../components/BottomNavBar'
 import { AvatarCircular } from '../../components/AvatarCircular'
@@ -102,6 +103,9 @@ export function TelaNotificacoes({ navigation, route }: Props) {
             onPress: async () => {
               try {
                 await excluirNotificacaoApi(cardSelecionado)
+                const osId = await buscarOsNotifId(cardSelecionado)
+                if (osId) await cancelarNotificacao(osId)
+                await removerMapeamento(cardSelecionado)
                 setCardSelecionado(null)
                 carregarDados()
               } catch {

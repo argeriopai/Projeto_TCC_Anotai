@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import * as Notifications from 'expo-notifications'
-import { cancelarNotificacao, listarNotificacoesAgendadas } from '../services/notificacoes'
+import { cancelarNotificacao, listarNotificacoesAgendadas, removerMapeamento } from '../services/notificacoes'
 import { listarNotificacoesApi } from '../services/api'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { useAuth } from '../contexts/AuthContext'
@@ -84,8 +84,11 @@ export function TelaNotificacoesPush({ navigation }: Props) {
       const res = await listarNotificacoesApi()
       const encontrada = res.data.find(n => n.id === notificacaoId)
       if (encontrada) {
-        navigation.navigate('Revisoes', { notificacaoDestaque: notificacaoId })
+        navigation.navigate('RegistrarRevisao', { registroParaEditar: encontrada })
       } else {
+        await cancelarNotificacao(item.identifier)
+        await removerMapeamento(notificacaoId)
+        setLista(prev => prev.filter(n => n.identifier !== item.identifier))
         Alert.alert('Registro não encontrado', 'Este registro foi excluído e não está mais disponível.')
       }
     } catch {

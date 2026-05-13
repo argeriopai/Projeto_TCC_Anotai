@@ -90,8 +90,14 @@ apps/mobile/
 - AuthContext restaurarSessao() cancela notificações órfãs quando sem sessão
 - TelaNotificacoesPush: useEffect cancela notificações órfãs para visitantes
 
-## Próximo passo — Sprint 6
-A definir com cautela.
+### 6C — Isolamento de dados no logout ✅
+- VeiculoContext: importa useAuth, observa [estaLogado, carregando] ✅
+- Quando carregando=false e estaLogado=false: zera veiculoAtivo, veiculoAtivoId e limpa AsyncStorage ✅
+- Guarda carregando evita reset prematuro durante restauração de sessão no startup ✅
+- Serviços/peças/revisões: não precisam de reset (useFocusEffect + API sem token = vazio) ✅
+
+## Sprint 6 — EM ANDAMENTO
+Próximo passo: a definir.
 
 ## Convenções do projeto
 - Estilos: StyleSheet.create com variável es

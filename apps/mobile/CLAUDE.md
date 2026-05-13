@@ -78,8 +78,20 @@ apps/mobile/
 - Drawer header: paddingTop 40, paddingBottom 20, removidos minHeight/maxHeight — altura automática ✅
 - Separador visual (height 1, rgba branco 15%, marginTop 8) entre header e lista de itens ✅
 
+## Sprint 6 — REVERTIDO
+
+### 6A — REVERTIDO (causou bugs de isolamento de dados e notificações)
+- TelaNotificacoesPush: remover ícone lixeira e "Cancelar todos"; cards navegam para 'Revisoes'
+- TelaHome: card exibe `marca modelo` como texto principal e `placa` como secundário
+
+### 6B — REVERTIDO junto com 6A
+- cancelarTodasNotificacoes() em notificacoes.ts
+- AuthContext logout() cancela todas as notificações ao sair
+- AuthContext restaurarSessao() cancela notificações órfãs quando sem sessão
+- TelaNotificacoesPush: useEffect cancela notificações órfãs para visitantes
+
 ## Próximo passo — Sprint 6
-A definir.
+A definir com cautela.
 
 ## Convenções do projeto
 - Estilos: StyleSheet.create com variável es

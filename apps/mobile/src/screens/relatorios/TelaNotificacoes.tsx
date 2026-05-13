@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   View, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert, Switch,
@@ -15,7 +15,7 @@ import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { BottomNavBar } from '../../components/BottomNavBar'
 import { AvatarCircular } from '../../components/AvatarCircular'
 
-interface Props { navigation: any }
+interface Props { navigation: any; route?: any }
 
 const TIPOS_PERIODICOS = ['Revisão periódica', 'Troca de óleo', 'Vencimento do IPVA', 'Vencimento do seguro', 'Licenciamento', 'Pneus']
 
@@ -23,7 +23,7 @@ function categoriaTipo(tipo: string): string {
   return TIPOS_PERIODICOS.includes(tipo) ? 'Periódica' : 'Preventiva'
 }
 
-export function TelaNotificacoes({ navigation }: Props) {
+export function TelaNotificacoes({ navigation, route }: Props) {
   const { proprietario } = useAuth()
   const { requireAuth } = useAuthGuard()
   const { veiculoAtivo } = useVeiculo()
@@ -39,6 +39,11 @@ export function TelaNotificacoes({ navigation }: Props) {
       setCardSelecionado(null)
     }, [veiculoAtivo?.id])
   )
+
+  useEffect(() => {
+    const id: string | undefined = route?.params?.notificacaoDestaque
+    if (id) setCardSelecionado(id)
+  }, [route?.params?.notificacaoDestaque])
 
   async function carregarDados() {
     setCarregando(true)

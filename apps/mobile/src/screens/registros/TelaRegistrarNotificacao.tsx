@@ -126,8 +126,8 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
             { text: 'OK', onPress: () => navigation.goBack() },
           ])
         } else {
-          await registrarNotificacaoApi(payload)
-          const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data)
+          const apiRes = await registrarNotificacaoApi(payload)
+          const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: apiRes.data.id })
           const msg = notifId
             ? 'Revisão registrada! Você receberá uma notificação no dia agendado.'
             : 'Revisão registrada com sucesso.'

@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import * as Notifications from 'expo-notifications'
 import { cancelarNotificacao, listarNotificacoesAgendadas } from '../services/notificacoes'
+import { listarNotificacoesApi } from '../services/api'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -71,6 +72,25 @@ export function TelaNotificacoesPush({ navigation }: Props) {
         },
       ]
     )
+  }
+
+  async function handleAbrirRevisao(item: Notifications.NotificationRequest) {
+    const notificacaoId: string | undefined = (item.content.data as any)?.notificacaoId
+    if (!notificacaoId) {
+      Alert.alert('Registro não encontrado', 'Este registro foi excluído e não está mais disponível.')
+      return
+    }
+    try {
+      const res = await listarNotificacoesApi()
+      const encontrada = res.data.find(n => n.id === notificacaoId)
+      if (encontrada) {
+        navigation.navigate('Revisoes', { notificacaoDestaque: notificacaoId })
+      } else {
+        Alert.alert('Registro não encontrado', 'Este registro foi excluído e não está mais disponível.')
+      }
+    } catch {
+      Alert.alert('Registro não encontrado', 'Este registro foi excluído e não está mais disponível.')
+    }
   }
 
   function handleCancelarTodos() {
@@ -149,7 +169,15 @@ export function TelaNotificacoesPush({ navigation }: Props) {
             const corpo  = item.content.body ?? ''
             const dataStr = (item.content.data as any)?.dataAgendada
             return (
-              <View key={item.identifier} style={es.card}>
+              <TouchableOpacity
+                key={item.identifier}
+                style={es.card}
+                onPress={() => handleAbrirRevisao(item)}
+                activeOpacity={0.85}
+                accessible
+                accessibilityLabel={`Abrir revisão: ${titulo}`}
+                accessibilityRole="button"
+              >
                 <View style={es.cardIcone}>
                   <Ionicons name="notifications" size={22} color={CORES.secundaria} />
                 </View>
@@ -174,7 +202,7 @@ export function TelaNotificacoesPush({ navigation }: Props) {
                 >
                   <Ionicons name="trash-outline" size={18} color={CORES.erro} />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             )
           })}
         </ScrollView>

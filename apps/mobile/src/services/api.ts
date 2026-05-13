@@ -199,16 +199,17 @@ if (MOCK_MODE) {
   }
 
   function getPid(config: InternalAxiosRequestConfig): string {
-    // MOCK_MODE: ignora validação de token — sempre retorna id fixo para testes locais
-    console.log('[mock] getPid → MOCK_MODE, retornando mock-user-1 sem validar token')
-    console.log('[mock] TOKEN RECEBIDO:', (() => {
-      const h = config.headers as any
-      const raw = (typeof h?.get === 'function' ? h.get('Authorization') : null)
-        ?? h?.['Authorization'] ?? h?.authorization ?? '(vazio)'
-      return String(raw).replace('Bearer ', '').trim() || '(vazio)'
-    })())
-    console.log('[mock] TOKENMAP size:', tokenMap.size)
-    return 'mock-user-1'
+    const h = config.headers as any
+    const raw = (typeof h?.get === 'function' ? h.get('Authorization') : null)
+      ?? h?.['Authorization'] ?? h?.authorization ?? ''
+    const token = String(raw).replace('Bearer ', '').trim()
+
+    if (!token) erroHttp(config, 401, 'Token não fornecido')
+
+    const pid = tokenMap.get(token)
+    if (!pid) erroHttp(config, 401, 'Token inválido ou expirado')
+
+    return pid
   }
 
   api.defaults.adapter = async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {

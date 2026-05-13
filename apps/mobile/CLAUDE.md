@@ -78,7 +78,7 @@ apps/mobile/
 - Drawer header: paddingTop 40, paddingBottom 20, removidos minHeight/maxHeight — altura automática ✅
 - Separador visual (height 1, rgba branco 15%, marginTop 8) entre header e lista de itens ✅
 
-## Sprint 6 — REVERTIDO
+## Sprint 6 — CONCLUÍDO
 
 ### 6A — REVERTIDO (causou bugs de isolamento de dados e notificações)
 - TelaNotificacoesPush: remover ícone lixeira e "Cancelar todos"; cards navegam para 'Revisoes'
@@ -96,11 +96,31 @@ apps/mobile/
 - Guarda carregando evita reset prematuro durante restauração de sessão no startup ✅
 - Serviços/peças/revisões: não precisam de reset (useFocusEffect + API sem token = vazio) ✅
 
-## Sprint 6 — EM ANDAMENTO
+### 6D — Isolamento de dados no mock (getPid) ✅
+- getPid() em api.ts: antes ignorava token e retornava 'mock-user-1' fixo ✅
+- Agora lê o token do header Authorization, rejeita 401 se ausente ou inválido ✅
+- Dados mock (carros, motos, serviços, peças) passam a ser isolados por proprietarioId real ✅
+
+## Sprint 7 — CONCLUÍDO
+
+### 7A — Notificações não aparecem para visitante
+- TelaNotificacoesPush: guard estaLogado limpa lista para visitante ✅
+
+### 7B — Isolamento de dados no mock (getPid recuperação de sessão)
+- getPid() recupera sessão após reload do Expo Go via formato do token ✅
+
+### 7C — Sincronização lembretes com registro de origem
+- notificacoes.ts: salvarMapeamento, buscarOsNotifId, removerMapeamento ✅
+- Criar lembrete: salva mapeamento notificacaoId → osNotifId ✅
+- Editar lembrete: cancela OS antigo, reagenda novo, atualiza mapeamento ✅
+- Excluir registro: cancela OS, remove mapeamento ✅
+- Clicar no lembrete: navega para registro de origem ou exibe alert se excluído ✅
+
+## Sprint 8 — EM ANDAMENTO
 Próximo passo: a definir.
 
 ## Convenções do projeto
-- Estilos: StyleSheet.create com variável es
+- Estilos: StyleSheet.create com variáveis
 - Nomes em português (telas, contextos, funções)
 - Componentes com export function (não default)
 - Ícones: @expo/vector-icons (Ionicons)

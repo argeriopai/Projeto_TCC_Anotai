@@ -207,9 +207,18 @@ if (MOCK_MODE) {
     if (!token) erroHttp(config, 401, 'Token não fornecido')
 
     const pid = tokenMap.get(token)
-    if (!pid) erroHttp(config, 401, 'Token inválido ou expirado')
+    if (pid) return pid
 
-    return pid
+    // Recuperação após reload do Expo Go: extrai userId do token mock
+    if (token.startsWith('mock-token-')) {
+      const partes = token.split('-')
+      // formato: mock-token-{userId}-{timestamp}
+      // userId pode conter hífens, timestamp é o último segmento
+      const userId = partes.slice(2, partes.length - 1).join('-')
+      if (userId) return userId
+    }
+
+    erroHttp(config, 401, 'Token inválido ou expirado')
   }
 
   api.defaults.adapter = async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {

@@ -127,3 +127,20 @@ Próximo passo: a definir.
 
 ## Repositório
 github.com/argeriopai/Projeto_TCC_Anotai
+
+## Próximas tarefas — Sprint 8
+
+### Formulário de avaliação do app (pesquisa de usabilidade)
+- Criar segundo Google Forms com máximo 5 perguntas
+- Objetivo: validar usabilidade do app com testadores
+- Compor documentação do TCC
+
+### Feedbacks dos testadores a implementar
+- (listar aqui os feedbacks recebidos quando retomar)
+
+### Missão: atingir 150 respostas no formulário inicial
+- Link: https://forms.gle/BSM28Z4uZrU4qE899
+- Atual: ~39 respostas — precisam de mais 111
+
+### Comando para recuperar contexto no próximo chat:
+"Leia o CLAUDE.md e retome o desenvolvimento"

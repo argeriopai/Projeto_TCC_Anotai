@@ -7,7 +7,8 @@ import {
 import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
-import { cadastrarMotoApi, atualizarMotoApi, Moto } from '../../services/api'
+import { cadastrarMotoApi, atualizarMotoApi, listarCarrosApi, listarMotosApi, Moto } from '../../services/api'
+import { mascaraPlaca, validarPlaca } from '../../utils/mascara'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
@@ -122,6 +123,10 @@ export function TelaRegistrarMoto({ navigation, route }: Props) {
       e.marca = 'Por favor, informe a marca do veículo'
     if (!modelo.trim()) e.modelo = 'Informe o modelo'
     if (!placa.trim())  e.placa  = 'Informe a placa'
+    else if (!validarPlaca(placa)) {
+      Alert.alert('Placa inválida', 'Informe uma placa no formato ABC-1234 (antigo) ou ABC1D23 (Mercosul).')
+      return false
+    }
     setErros(e)
     return Object.keys(e).length === 0
   }
@@ -130,6 +135,40 @@ export function TelaRegistrarMoto({ navigation, route }: Props) {
     requireAuth(async () => {
       if (!validar()) return
       setCarregando(true)
+
+      try {
+        const { data: motosExistentes } = await listarMotosApi()
+        const placaLimpa = placa.replace('-', '').toUpperCase()
+        const duplicado = motosExistentes.find(m =>
+          m.placa.replace('-', '').toUpperCase() === placaLimpa &&
+          m.id !== (edit?.id ?? '')
+        )
+        if (duplicado) {
+          Alert.alert(
+            '⚠️ Veículo já cadastrado',
+            `Já existe uma moto registrada com a placa ${placa.toUpperCase()}.\n\nVerifique seus veículos cadastrados.`
+          )
+          setCarregando(false)
+          return
+        }
+      } catch { /* ignora */ }
+
+      try {
+        const { data: carrosExistentes } = await listarCarrosApi()
+        const placaLimpa = placa.replace('-', '').toUpperCase()
+        const duplicadoCarro = carrosExistentes.find(c =>
+          c.placa.replace('-', '').toUpperCase() === placaLimpa
+        )
+        if (duplicadoCarro) {
+          Alert.alert(
+            '⚠️ Placa já cadastrada',
+            `A placa ${placa.toUpperCase()} já está registrada em um carro.\n\nVerifique seus veículos cadastrados.`
+          )
+          setCarregando(false)
+          return
+        }
+      } catch { /* ignora */ }
+
       const payload = {
         marca:   marcaSel === 'Outra' ? marcaCustom.trim() : marcaSel,
         modelo:  modelo.trim(),
@@ -215,6 +254,7 @@ export function TelaRegistrarMoto({ navigation, route }: Props) {
                 blurOnSubmit={false}
                 onSubmitEditing={() => modeloRef.current?.focus()}
                 autoFocus
+                maxLength={40}
               />
               {!!erros.marca && <AppText style={estilos.textoErro}>{erros.marca}</AppText>}
             </View>
@@ -231,6 +271,7 @@ export function TelaRegistrarMoto({ navigation, route }: Props) {
               placeholderTextColor={CORES.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
+              maxLength={40}
               returnKeyType="next"
               blurOnSubmit={false}
               onSubmitEditing={() => placaRef.current?.focus()}
@@ -252,11 +293,12 @@ export function TelaRegistrarMoto({ navigation, route }: Props) {
               ref={placaRef}
               style={[estilos.input, erros.placa ? estilos.inputErro : null]}
               value={placa}
-              onChangeText={t => { setPlaca(t.toUpperCase()); limparErro('placa') }}
-              placeholder="Ex: XYZ-5678"
+              onChangeText={txt => { setPlaca(mascaraPlaca(txt)); limparErro('placa') }}
+              placeholder="Ex: ABC-1234 ou ABC1D23"
               placeholderTextColor={CORES.placeholder}
               autoCapitalize="characters"
               autoCorrect={false}
+              maxLength={8}
               returnKeyType="next"
               blurOnSubmit={false}
               onSubmitEditing={() => corRef.current?.focus()}
@@ -275,6 +317,7 @@ export function TelaRegistrarMoto({ navigation, route }: Props) {
               placeholderTextColor={CORES.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
+              maxLength={40}
               returnKeyType="done"
               blurOnSubmit={true}
             />

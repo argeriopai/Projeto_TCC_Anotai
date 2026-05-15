@@ -143,6 +143,7 @@ export function TelaLogin({ navigation }: Props) {
           {/* Esqueci a senha */}
           <TouchableOpacity
             style={estilos.linkEsqueceu}
+            onPress={() => navigation.navigate('EsqueciSenha')}
             accessible={true}
             accessibilityLabel="Esqueci minha senha"
             accessibilityRole="button"

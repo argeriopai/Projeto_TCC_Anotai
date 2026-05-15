@@ -23,6 +23,11 @@ apps/mobile/
 - Sprint 1: Splash, Login, Cadastro, Home, Guest Mode, Drawer, Bottom Nav, Carrossel
 - Sprint 2: Registro Carro, Moto, Serviço, Peças, Revisões, DatePicker, Máscaras
 - Sprint 3: 5 telas de consulta, Galeria de fotos, Regras de negócio, VLibras
+- Sprint 4: Notificações locais, TelaNotificacoesPush, permissões
+- Sprint 5: Veículo Ativo na Home, Relatório de Despesas, ajustes UX
+- Sprint 6: Isolamento de dados no logout e no mock (getPid)
+- Sprint 7: Guard visitante, recuperação de sessão, sync lembretes ↔ registro
+- Sprint 8: Modal boas-vindas visitante, Esqueci minha senha, máscara de placa, maxLength campos, auto-limpeza notificações vencidas, campo livre "Outro", bloqueio placa duplicada
 
 ## Sprint 3 — CONCLUÍDO
 - 5 telas de consulta ✅
@@ -116,8 +121,45 @@ apps/mobile/
 - Excluir registro: cancela OS, remove mapeamento ✅
 - Clicar no lembrete: navega para registro de origem ou exibe alert se excluído ✅
 
-## Sprint 8 — EM ANDAMENTO
-Próximo passo: a definir.
+## Sprint 8 — CONCLUÍDO
+
+### 8A — Modal de boas-vindas para visitante na TelaHome ✅
+- TelaHome: `avisadoVisitante = useRef(false)` + `useEffect` exibe Alert de boas-vindas apenas para visitantes, apenas 1 vez por visita (não rerenderiza)
+
+### 8B — Tela "Esqueci minha senha" ✅
+- Criado `src/screens/auth/TelaEsqueciSenha.tsx`: campo e-mail, validação, chamada `api.post('/auth/esqueci-senha')`, Alert de confirmação, botão voltar
+- RootNavigator: rota `EsqueciSenha` com `animation: 'slide_from_right'`
+- TelaLogin: botão "Esqueci minha senha" agora navega para `EsqueciSenha`
+
+### 8C — Máscara de placa (padrão antigo + Mercosul) ✅
+- Criado `src/utils/mascara.ts`: `mascaraPlaca()` e `validarPlaca()` (regex antigo ABC-1234 e Mercosul ABC1D23)
+- TelaRegistrarCarro e TelaRegistrarMoto: campo Placa usa `mascaraPlaca` no `onChangeText`, `maxLength={8}`, validação com `validarPlaca` no `validar()`
+
+### 8D — Limite de caracteres (`maxLength`) em todos os campos ✅
+- TelaCadastro: `CampoProps` recebe `maxLength?`; campos: Nome=60, E-mail=80, Telefone=15, Senha=20, Confirmar Senha=20
+- TelaRegistrarCarro / TelaRegistrarMoto: Marca livre=40, Modelo=40, Cor=40, Placa=8
+- TelaRegistrarServico: Tipo=50, Descrição=300, Custo=12, Estabelecimento=60, Tel.estab=15, Profissional=60, Tel.prof=15, Garantia=30, Kilometragem=7
+- TelaRegistrarPeca: Nome=50, Descrição=300, Estabelecimento=60, Tel.estab=15, Quantidade=4, Valor unit=12
+- TelaRegistrarNotificacao: Mensagem=200
+
+### 8E — Ajustes: Cor maxLength 40, notificação 1 dia antes, texto informativo ✅
+- TelaRegistrarCarro / Moto: campo Cor `maxLength` 20 → 40
+- `notificacoes.ts`: `agendarNotificacao` agora subtrai 1 dia antes de `setHours(8,0,0,0)` — dispara 1 dia antes da data do lembrete
+- TelaRegistrarNotificacao: view informativa abaixo do `CampoData` com ícone `information-circle-outline` + texto "Você será notificado um dia antes"
+
+### 8F — Auto-remover notificações com data vencida ✅
+- TelaNotificacoesPush `carregarLista()`: percorre todas as notificações agendadas, cancela silenciosamente as vencidas (verifica 4 formatos de `trigger`: `value`, `seconds`, `dateComponents`, `date`), exibe apenas as válidas ordenadas por `dataAgendada`
+
+### 8G — Campo livre "Outro" nos chips de Tipo da TelaRegistrarNotificacao ✅
+- Estado `tipoOutro` adicionado; `tipoInicial` computado antes do estado para edição
+- Quando `tipo === 'Outro'`: exibe TextInput "Especifique o tipo..." entre chips de Tipo e chips de Veículo
+- `validar()` exige `tipoOutro.trim()` quando `tipo === 'Outro'`
+- `handleSalvar()` envia `tipoOutro.trim()` no payload quando tipo é "Outro"
+
+### 8H — Bloquear cadastro de veículo com placa duplicada ✅
+- TelaRegistrarCarro: antes do payload, busca duplicata em carros (mesmo id excluído na edição) e depois em motos — Alert se encontrar
+- TelaRegistrarMoto: mesma lógica com ordem invertida (motos primeiro, carros depois)
+- Comparação normalizada: remove hífen, força maiúsculas em ambos os lados
 
 ## Convenções do projeto
 - Estilos: StyleSheet.create com variáveis

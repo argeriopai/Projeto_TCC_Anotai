@@ -256,6 +256,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
                 placeholderTextColor={CORES.placeholder}
                 autoCapitalize="sentences"
                 autoCorrect={false}
+                maxLength={50}
                 returnKeyType="next"
                 blurOnSubmit={false}
                 onSubmitEditing={() => descricaoRef.current?.focus()}
@@ -281,6 +282,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
               placeholder="Detalhes adicionais..."
               placeholderTextColor={CORES.placeholder}
               multiline
+              maxLength={300}
               autoCapitalize="sentences"
               returnKeyType="next"
               blurOnSubmit={false}
@@ -299,6 +301,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
               placeholderTextColor={CORES.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
+              maxLength={60}
               returnKeyType="next"
               blurOnSubmit={false}
               onSubmitEditing={() => telEstabRef.current?.focus()}
@@ -315,6 +318,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
               placeholder="(00) 00000-0000"
               placeholderTextColor={CORES.placeholder}
               keyboardType="phone-pad"
+              maxLength={15}
               onBlur={handleTelEstabBlur}
               onFocus={() => limparErro('telefoneEstabelecimento')}
               returnKeyType="next"
@@ -339,6 +343,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
                 placeholder="Ex: 2"
                 placeholderTextColor={CORES.placeholder}
                 keyboardType="decimal-pad"
+                maxLength={4}
                 returnKeyType="next"
                 blurOnSubmit={false}
                 onSubmitEditing={() => valorUnitRef.current?.focus()}
@@ -354,6 +359,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
                 placeholder="R$ 0,00"
                 placeholderTextColor={CORES.placeholder}
                 keyboardType="numeric"
+                maxLength={12}
                 returnKeyType="done"
                 blurOnSubmit={true}
               />

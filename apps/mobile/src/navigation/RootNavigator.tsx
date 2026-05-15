@@ -20,6 +20,7 @@ import { TelaGaleria }            from '../screens/TelaGaleria'
 import { TelaAcessibilidade }    from '../screens/TelaAcessibilidade'
 import { TelaNotificacoesPush } from '../screens/TelaNotificacoesPush'
 import { TelaRelatorio }        from '../screens/TelaRelatorio'
+import { TelaEsqueciSenha }    from '../screens/auth/TelaEsqueciSenha'
 
 const Stack = createNativeStackNavigator()
 
@@ -49,6 +50,7 @@ export function RootNavigator() {
         <Stack.Screen name="Acessibilidade"       component={TelaAcessibilidade}      options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="NotificacoesPush"     component={TelaNotificacoesPush}    options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="TelaRelatorio"        component={TelaRelatorio}           options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="EsqueciSenha"         component={TelaEsqueciSenha}        options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   )

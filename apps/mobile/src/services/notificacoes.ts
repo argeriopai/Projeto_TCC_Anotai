@@ -50,6 +50,7 @@ export async function agendarNotificacao(
   extras?: Record<string, unknown>,
 ): Promise<string | null> {
   const agendada = new Date(data)
+  agendada.setDate(agendada.getDate() - 1)
   agendada.setHours(8, 0, 0, 0)
 
   if (agendada <= new Date()) return null

@@ -69,6 +69,28 @@ export function TelaHome({ navigation }: Props) {
   const overlayOpacity = useRef(new Animated.Value(0)).current
   const carouselRef = useRef<ScrollView>(null)
 
+  const avisadoVisitante = useRef(false)
+
+  useEffect(() => {
+    if (!estaLogado && !avisadoVisitante.current) {
+      avisadoVisitante.current = true
+      Alert.alert(
+        '👋 Bem-vindo ao ANOTAÍ!',
+        'Você pode navegar livremente pelo app e até preencher os campos de registro.\n\nPorém, para salvar qualquer informação é necessário criar uma conta gratuita.',
+        [
+          {
+            text: 'Fazer login',
+            onPress: () => navigation.navigate('Login'),
+          },
+          {
+            text: 'Agora não',
+            style: 'cancel',
+          },
+        ]
+      )
+    }
+  }, [estaLogado])
+
   useEffect(() => {
     const interval = setInterval(() => {
       setSlideAtual(prev => {

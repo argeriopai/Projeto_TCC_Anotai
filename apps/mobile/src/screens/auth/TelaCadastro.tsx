@@ -32,12 +32,13 @@ interface CampoProps {
   onBlur?: () => void
   onFocus?: () => void
   valido?: boolean
+  maxLength?: number
 }
 
 // Componente definido fora de TelaCadastro para evitar remontagem a cada keystroke
 function Campo({
   label, icone, valor, onChange, erro, refCampo, proximoRef, aoSubmeter,
-  tipo, mostrar, onToggleMostrar, placeholder, onBlur, onFocus, valido,
+  tipo, mostrar, onToggleMostrar, placeholder, onBlur, onFocus, valido, maxLength,
 }: CampoProps) {
   const eSenha = tipo === 'senha' || tipo === 'confirmar'
   return (
@@ -64,6 +65,7 @@ function Campo({
           onFocus={onFocus}
           blurOnSubmit={false}
           autoCorrect={false}
+          maxLength={maxLength}
           accessibilityLabel={`Campo ${label}`}
         />
         {eSenha && (
@@ -182,6 +184,7 @@ export function TelaCadastro({ navigation }: Props) {
             erro={erros.nome}
             proximoRef={refEmail}
             placeholder="digite aqui seu nome"
+            maxLength={60}
           />
 
           <Campo
@@ -194,6 +197,7 @@ export function TelaCadastro({ navigation }: Props) {
             proximoRef={refTelefone}
             tipo="email"
             placeholder="seu@email.com"
+            maxLength={80}
           />
 
           <Campo
@@ -209,6 +213,7 @@ export function TelaCadastro({ navigation }: Props) {
             onBlur={handleTelBlur}
             onFocus={() => setErros(e => ({ ...e, telefone: '' }))}
             valido={telefoneValido}
+            maxLength={15}
           />
 
           <Campo
@@ -223,6 +228,7 @@ export function TelaCadastro({ navigation }: Props) {
             mostrar={mostrarSenha}
             onToggleMostrar={() => setMostrarSenha(v => !v)}
             placeholder="mínimo 6 caracteres"
+            maxLength={20}
           />
 
           <Campo
@@ -237,6 +243,7 @@ export function TelaCadastro({ navigation }: Props) {
             mostrar={mostrarConfirmar}
             onToggleMostrar={() => setMostrarConfirmar(v => !v)}
             placeholder="Confirmar senha"
+            maxLength={20}
           />
 
           {/* Termos */}

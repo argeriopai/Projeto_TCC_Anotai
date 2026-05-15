@@ -43,7 +43,13 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   const { requireAuth } = useAuthGuard()
   const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
 
-  const [tipo,       setTipo]       = useState(edit?.tipo ?? '')
+  const tipoInicial = edit
+    ? (TIPOS_REVISAO.includes(edit.tipo) ? edit.tipo : 'Outro')
+    : ''
+  const [tipo,      setTipo]      = useState(tipoInicial)
+  const [tipoOutro, setTipoOutro] = useState(
+    edit && !TIPOS_REVISAO.slice(0, -1).includes(edit.tipo) ? edit.tipo : ''
+  )
   const [mensagem,   setMensagem]   = useState(edit?.mensagem ?? '')
   const [data,       setData]       = useState(() => edit?.data ? parseDateStr(edit.data) : new Date())
   const [carregando, setCarregando] = useState(false)
@@ -104,6 +110,10 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   function validar(): boolean {
     const e: Record<string, string> = {}
     if (!tipo.trim())     e.tipo     = 'Selecione o tipo de revisão'
+    if (tipo === 'Outro' && !tipoOutro.trim()) {
+      Alert.alert('Campo obrigatório', 'Descreva o tipo de revisão.')
+      return false
+    }
     if (!mensagem.trim()) e.mensagem = 'Informe a mensagem'
     setErros(e)
     return Object.keys(e).length === 0
@@ -114,7 +124,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
       if (!validar()) return
       setCarregando(true)
       const payload = {
-        tipo:      tipo.trim(),
+        tipo:      tipo === 'Outro' ? tipoOutro.trim() : tipo,
         mensagem:  mensagem.trim(),
         data:      formatarData(data),
         veiculoId: veiculoId ?? undefined,
@@ -198,6 +208,31 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
           </ScrollView>
           {!!erros.tipo && <AppText style={estilos.textoErro}>{erros.tipo}</AppText>}
 
+          {tipo === 'Outro' && (
+            <View style={{ marginTop: ESPACOS.sm, marginBottom: ESPACOS.sm }}>
+              <TextInput
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: erros.tipo ? '#e74c3c' : '#ddd',
+                  paddingHorizontal: ESPACOS.sm,
+                  paddingVertical: 12,
+                  fontSize: FONTES.normal,
+                  color: '#333',
+                }}
+                placeholder="Descreva o tipo de revisão..."
+                placeholderTextColor="#999"
+                value={tipoOutro}
+                onChangeText={txt => { setTipoOutro(txt) }}
+                autoCapitalize="sentences"
+                autoCorrect={false}
+                maxLength={50}
+                returnKeyType="next"
+              />
+            </View>
+          )}
+
           <View style={{ height: ESPACOS.md }} />
 
           {/* Veículo (opcional) */}
@@ -242,6 +277,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
               placeholder="Descreva o lembrete..."
               placeholderTextColor={CORES.placeholder}
               multiline
+              maxLength={200}
               autoCapitalize="sentences"
               returnKeyType="done"
               blurOnSubmit={false}
@@ -257,6 +293,12 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
             onChange={setData}
             permitirFuturo
           />
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 8 }}>
+            <Ionicons name="information-circle-outline" size={14} color="#666" style={{ marginRight: 4 }} />
+            <AppText style={{ fontSize: 12, color: '#666' }}>
+              Você será notificado um dia antes
+            </AppText>
+          </View>
 
           <TouchableOpacity
             style={[estilos.botao, carregando && { opacity: 0.6 }]}

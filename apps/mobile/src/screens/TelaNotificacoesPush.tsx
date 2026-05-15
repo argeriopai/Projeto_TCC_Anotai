@@ -42,13 +42,35 @@ export function TelaNotificacoesPush({ navigation }: Props) {
     if (!estaLogado) { setLista([]); setCarregando(false); return }
     setCarregando(true)
     try {
-      const agendadas = await listarNotificacoesAgendadas()
-      agendadas.sort((a, b) => {
+      const todas = await listarNotificacoesAgendadas()
+      const agora = new Date()
+
+      const validas: typeof todas = []
+      for (const n of todas) {
+        const trigger = n.trigger as any
+        const dataDisparo: Date | null =
+          trigger?.value       ? new Date(trigger.value * 1000)
+          : trigger?.seconds   ? new Date(trigger.seconds * 1000)
+          : trigger?.dateComponents ? null
+          : trigger?.date      ? new Date(trigger.date)
+          : null
+
+        if (dataDisparo && dataDisparo <= agora) {
+          try {
+            await cancelarNotificacao(n.identifier)
+            await removerMapeamento(n.identifier)
+          } catch { /* ignora erros silenciosos */ }
+        } else {
+          validas.push(n)
+        }
+      }
+
+      validas.sort((a, b) => {
         const dA = (a.content.data as any)?.dataAgendada ?? ''
         const dB = (b.content.data as any)?.dataAgendada ?? ''
         return dA.localeCompare(dB)
       })
-      setLista(agendadas)
+      setLista(validas)
     } catch {
       setLista([])
     } finally {

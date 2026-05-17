@@ -27,6 +27,7 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData)
 
 const TOKEN_KEY = '@anotai:token'
 const USER_KEY  = '@anotai:usuario'
+const FOTO_KEY  = '@anotai:foto_perfil'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [proprietario, setProprietario] = useState<Proprietario | null>(null)
@@ -62,6 +63,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       [TOKEN_KEY, data.token],
       [USER_KEY,  JSON.stringify(data.proprietario)],
     ])
+    try {
+      const fotoSalva = await AsyncStorage.getItem(FOTO_KEY)
+      if (fotoSalva) {
+        const comFoto = { ...data.proprietario, fotoPerfil: fotoSalva }
+        setProprietario(comFoto)
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(comFoto))
+      }
+    } catch { /* ignora */ }
   }
 
   async function cadastrar(dados: { nome: string; email: string; senha: string; apelido?: string; telefone?: string }) {
@@ -73,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     api.defaults.headers.common['Authorization'] = ''
     setToken(null)
     setProprietario(null)
-    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY])
+    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY, FOTO_KEY])
   }
 
   async function atualizarPerfil(dados: Partial<Pick<Proprietario, 'nome' | 'apelido' | 'telefone'>>) {
@@ -88,6 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const atualizado: Proprietario = { ...proprietario, fotoPerfil: uri ?? undefined }
     setProprietario(atualizado)
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(atualizado))
+    if (uri) {
+      await AsyncStorage.setItem(FOTO_KEY, uri)
+    } else {
+      await AsyncStorage.removeItem(FOTO_KEY)
+    }
   }
 
   return (

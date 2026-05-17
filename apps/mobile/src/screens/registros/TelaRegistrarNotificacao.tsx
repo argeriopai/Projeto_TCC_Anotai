@@ -17,6 +17,7 @@ import { CampoData, formatarData } from '../../components/CampoData'
 import { useVeiculo } from '../../contexts/VeiculoContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
 import { useConfirmarSaida } from '../../hooks/useConfirmarSaida'
+import { TIPOS_VEICULO_CARRO, TIPOS_VEICULO_MOTO } from '../../constants/tiposServico'
 
 interface Props { navigation: any; route: any }
 
@@ -24,26 +25,6 @@ function parseDateStr(dateStr: string): Date {
   const [d, m, y] = dateStr.split('/').map(Number)
   return new Date(y, m - 1, d)
 }
-
-const TIPOS_REVISAO_CARRO = [
-  'Revisão periódica',
-  'Troca de óleo',
-  'Vencimento do IPVA',
-  'Vencimento do seguro',
-  'Licenciamento',
-  'Pneus',
-  'Outro',
-]
-
-const TIPOS_REVISAO_MOTO = [
-  'Revisão periódica',
-  'Troca de óleo',
-  'Vencimento do IPVA',
-  'Vencimento do seguro',
-  'Licenciamento',
-  'Pneus',
-  'Outro',
-]
 
 const OPCOES_DIAS_ANTES = [
   'No dia do evento',
@@ -117,13 +98,13 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   const { requireAuth } = useAuthGuard()
   const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
 
-  const todostipos = [...TIPOS_REVISAO_CARRO, ...TIPOS_REVISAO_MOTO]
+  const todostipos = [...TIPOS_VEICULO_CARRO, ...TIPOS_VEICULO_MOTO]
   const tipoInicial = edit
     ? (todostipos.includes(edit.tipo) ? edit.tipo : 'Outro')
     : ''
   const [tipo,      setTipo]      = useState(tipoInicial)
   const [tipoOutro, setTipoOutro] = useState(
-    edit && !TIPOS_REVISAO_CARRO.slice(0, -1).includes(edit.tipo) ? edit.tipo : ''
+    edit && !TIPOS_VEICULO_CARRO.slice(0, -1).includes(edit.tipo) ? edit.tipo : ''
   )
   const [mensagem,   setMensagem]   = useState(edit?.mensagem ?? '')
   const [data,       setData]       = useState(() => edit?.data ? parseDateStr(edit.data) : new Date())
@@ -261,11 +242,11 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
 
           {/* Tipo de notificação */}
           <CampoDropdown
-            label="Tipo"
+            label="Tipo de revisão"
             obrigatorio
             valor={tipo === 'Outro' ? '' : tipo}
             placeholder="Selecione o tipo de revisão"
-            opcoes={veiculoAtivo?.tipo === 'moto' ? TIPOS_REVISAO_MOTO : TIPOS_REVISAO_CARRO}
+            opcoes={veiculoAtivo?.tipo === 'moto' ? TIPOS_VEICULO_MOTO : TIPOS_VEICULO_CARRO}
             erro={erros.tipo}
             onChange={t => { setTipo(t); limparErro('tipo') }}
           />

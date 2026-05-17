@@ -19,6 +19,7 @@ import { AvatarCircular } from '../../components/AvatarCircular'
 import { FotosPicker, FotoSections, FOTOS_VAZIAS } from '../../components/FotosPicker'
 import { buscarFotos, salvarFotos, temFotos } from '../../utils/fotosStorage'
 import { useConfirmarSaida } from '../../hooks/useConfirmarSaida'
+import { TIPOS_VEICULO_CARRO, TIPOS_VEICULO_MOTO } from '../../constants/tiposServico'
 
 interface Props { navigation: any; route: any }
 
@@ -26,46 +27,6 @@ function parseDateStr(dateStr: string): Date {
   const [d, m, y] = dateStr.split('/').map(Number)
   return new Date(y, m - 1, d)
 }
-
-const TIPOS_SERVICO_CARRO = [
-  'Troca de óleo + filtro de óleo',
-  'Troca de óleo + filtro de combustível + filtro de gasolina',
-  'Troca de óleo + filtro de combustível + filtro de gasolina + filtros de ar',
-  'Alinhamento e balanceamento',
-  'Troca de pneus',
-  'Revisão de freios',
-  'Troca de filtro de ar',
-  'Revisão elétrica',
-  'Revisão de bateria',
-  'Ar condicionado',
-  'Funilaria e pintura',
-  'Troca de velas',
-  'Revisão de suspensão',
-  'Higienização',
-  'Rodízio de pneus',
-  'Troca correia dentada',
-  'Revisão pastilhas de freio',
-  'Motor',
-  'Câmbio',
-  'Radiador',
-  'Descarga',
-  'Embreagem',
-  'Direção',
-  'Outro',
-]
-
-const TIPOS_SERVICO_MOTO = [
-  'Troca de óleo + filtro de óleo',
-  'Kit relação (corrente, coroa e pinhão)',
-  'Sistema de freios (pastilhas, sapatas e fluido)',
-  'Bateria',
-  'Motor',
-  'Revisão freios',
-  'Funilaria e pintura',
-  'Cabos embreagem, freios, acelerador',
-  'Troca de velas',
-  'Outro',
-]
 
 interface DropdownProps {
   label: string
@@ -142,13 +103,13 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
   const kilometragemRef   = useRef<TextInput>(null)
 
   const tipoInicial = edit
-    ? ([...TIPOS_SERVICO_CARRO, ...TIPOS_SERVICO_MOTO].includes(edit.tipo ?? '')
+    ? ([...TIPOS_VEICULO_CARRO, ...TIPOS_VEICULO_MOTO].includes(edit.tipo ?? '')
         ? edit.tipo ?? ''
         : 'Outro')
     : ''
   const [tipo,                    setTipo]                    = useState(tipoInicial)
   const [tipoOutro, setTipoOutro] = useState(
-    edit && ![...TIPOS_SERVICO_CARRO, ...TIPOS_SERVICO_MOTO]
+    edit && ![...TIPOS_VEICULO_CARRO, ...TIPOS_VEICULO_MOTO]
       .includes(edit.tipo ?? '') ? edit.tipo ?? '' : ''
   )
   const [descricao,               setDescricao]               = useState(edit?.descricao ?? '')
@@ -350,7 +311,7 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
             obrigatorio
             valor={tipo}
             placeholder="Selecione o tipo de serviço"
-            opcoes={veiculoAtivo?.tipo === 'moto' ? TIPOS_SERVICO_MOTO : TIPOS_SERVICO_CARRO}
+            opcoes={veiculoAtivo?.tipo === 'moto' ? TIPOS_VEICULO_MOTO : TIPOS_VEICULO_CARRO}
             erro={erros.tipo}
             onChange={t => { setTipo(t); limparErro('tipo') }}
           />

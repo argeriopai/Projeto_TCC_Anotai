@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
@@ -6,7 +6,7 @@ import {
 import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { listarCarrosApi, listarMotosApi, registrarServicoApi, atualizarServicoApi, Carro, Moto, Servico } from '../../services/api'
+import { registrarServicoApi, atualizarServicoApi, Servico } from '../../services/api'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { useVoiceInput } from '../../hooks/useVoiceInput'
 import { BotaoMic, IndicadorGravando } from '../../components/BotaoMic'
@@ -18,10 +18,9 @@ import { useAuthGuard } from '../../hooks/useAuthGuard'
 import { AvatarCircular } from '../../components/AvatarCircular'
 import { FotosPicker, FotoSections, FOTOS_VAZIAS } from '../../components/FotosPicker'
 import { buscarFotos, salvarFotos, temFotos } from '../../utils/fotosStorage'
+import { useConfirmarSaida } from '../../hooks/useConfirmarSaida'
 
 interface Props { navigation: any; route: any }
-
-type VeiculoItem = { id: string; label: string }
 
 function parseDateStr(dateStr: string): Date {
   const [d, m, y] = dateStr.split('/').map(Number)
@@ -61,9 +60,7 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
   const [telEstabValido, setTelEstabValido] = useState(false)
   const [telProfValido,  setTelProfValido]  = useState(false)
 
-  const [veiculos,           setVeiculos]           = useState<VeiculoItem[]>([])
-  const [veiculoId,          setVeiculoId]          = useState<string | null>(edit?.veiculoId ?? null)
-  const [carregandoVeiculos, setCarregandoVeiculos] = useState(true)
+  const [veiculoId] = useState<string | null>(edit?.veiculoId ?? veiculoAtivo?.id ?? null)
 
   const { gravando: gravandoDescricao, iniciarGravacao, pararGravacao } = useVoiceInput(
     text => setDescricao(prev => prev ? prev + ' ' + text : text)
@@ -90,25 +87,6 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
     }
   }, [edit?.id])
 
-  useEffect(() => {
-    async function carregarVeiculos() {
-      try {
-        const [resCarros, resMotos] = await Promise.all([listarCarrosApi(), listarMotosApi()])
-        const lista: VeiculoItem[] = [
-          ...resCarros.data.map((c: Carro) => ({ id: c.id, label: `🚗 ${c.marca} ${c.modelo} — ${c.placa}` })),
-          ...resMotos.data.map((m: Moto)  => ({ id: m.id, label: `🏍️ ${m.marca} ${m.modelo} — ${m.placa}` })),
-        ]
-        setVeiculos(lista)
-        if (!edit && veiculoAtivo) setVeiculoId(veiculoAtivo.id)
-      } catch {
-        // sem veículos ainda
-      } finally {
-        setCarregandoVeiculos(false)
-      }
-    }
-    carregarVeiculos()
-  }, [])
-
   async function toggleMic() {
     if (gravandoDescricao) {
       await pararGravacao()
@@ -116,6 +94,17 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
       await iniciarGravacao()
     }
   }
+
+  const temAlteracao = useCallback(() => {
+    if (edit) return true
+    return !!tipo.trim() || !!descricao.trim() || !!custo ||
+      !!estabelecimento.trim() || !!telefoneEstabelecimento ||
+      !!profissional.trim() || !!telefoneProfissional ||
+      !!garantia.trim() || !!kilometragem.trim()
+  }, [edit, tipo, descricao, custo, estabelecimento,
+      telefoneEstabelecimento, profissional,
+      telefoneProfissional, garantia, kilometragem])
+  const handleVoltar = useConfirmarSaida(navigation, temAlteracao)
 
   function limparErro(campo: string) {
     setErros(e => ({ ...e, [campo]: '' }))
@@ -143,7 +132,13 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
 
   function validar(): boolean {
     const e: Record<string, string> = {}
-    if (!veiculoId)   e.veiculo = 'Selecione um veículo'
+    if (!veiculoAtivo) {
+      Alert.alert(
+        'Nenhum veículo ativo',
+        'Ative um veículo na página inicial antes de registrar.'
+      )
+      return false
+    }
     if (!tipo.trim()) e.tipo    = 'Informe o tipo de serviço'
     if (telefoneEstabelecimento && telefoneEstabelecimento.replace(/\D/g, '').length !== 11)
       e.telefoneEstabelecimento = 'Telefone inválido. Use o formato (99) 99999-9999'
@@ -158,7 +153,7 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
       if (!validar()) return
       setCarregando(true)
       const payload = {
-        veiculoId:               veiculoId!,
+        veiculoId:               veiculoAtivo?.id ?? veiculoId!,
         tipo:                    tipo.trim(),
         descricao:               descricao.trim()               || undefined,
         data:                    formatarData(data),
@@ -198,7 +193,7 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
     <SafeAreaView style={estilos.safe} edges={['top']}>
       <View style={estilos.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleVoltar}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessible={true}
           accessibilityLabel="Voltar"
@@ -225,37 +220,19 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={estilos.scroll} contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
 
-          {/* Seletor de veículo */}
-          <AppText style={estilos.label}>
-            Veículo <AppText style={estilos.obrig}>*</AppText>
-          </AppText>
-          {carregandoVeiculos ? (
-            <ActivityIndicator color={CORES.secundaria} style={{ marginVertical: ESPACOS.md }} />
-          ) : veiculos.length === 0 ? (
-            <TouchableOpacity style={estilos.avisoVeiculo} onPress={() => navigation.navigate('RegistrarCarro')}>
-              <Ionicons name="alert-circle-outline" size={18} color={CORES.atencao} />
-              <AppText style={estilos.avisoTexto}>Nenhum veículo cadastrado. Toque para cadastrar.</AppText>
-            </TouchableOpacity>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.chipScroll}>
-              {veiculos.map(v => (
-                <TouchableOpacity
-                  key={v.id}
-                  style={[estilos.chip, veiculoId === v.id && estilos.chipAtivo]}
-                  onPress={() => { setVeiculoId(v.id); limparErro('veiculo') }}
-                  accessible={true}
-                  accessibilityLabel={`Selecionar veículo ${v.label}`}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: veiculoId === v.id }}
-                >
-                  <AppText style={[estilos.chipTexto, veiculoId === v.id && estilos.chipTextoAtivo]} numberOfLines={1}>
-                    {v.label}
-                  </AppText>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-          {!!erros.veiculo && <AppText style={estilos.textoErro}>{erros.veiculo}</AppText>}
+          <AppText style={estilos.label}>Veículo ativo</AppText>
+          <View style={estilos.cardVeiculoAtivo}>
+            <Ionicons
+              name={veiculoAtivo ? 'checkmark-circle' : 'alert-circle-outline'}
+              size={18}
+              color={veiculoAtivo ? CORES.secundaria : CORES.atencao}
+            />
+            <AppText style={estilos.cardVeiculoTexto} numberOfLines={1}>
+              {veiculoAtivo
+                ? `${veiculoAtivo.marca} ${veiculoAtivo.modelo} — ${veiculoAtivo.placa}`
+                : 'Nenhum veículo ativo. Ative um na página inicial.'}
+            </AppText>
+          </View>
 
           <View style={{ height: ESPACOS.md }} />
 
@@ -544,4 +521,22 @@ const estilos = StyleSheet.create({
     marginTop: ESPACOS.md,
   },
   textoBotao:     { color: CORES.branco, fontSize: FONTES.media, fontWeight: '700' },
+  cardVeiculoAtivo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8FAF0',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: CORES.secundaria,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+    marginBottom: ESPACOS.sm,
+  },
+  cardVeiculoTexto: {
+    flex: 1,
+    fontSize: FONTES.normal,
+    color: CORES.primaria,
+    fontWeight: '600',
+  },
 })

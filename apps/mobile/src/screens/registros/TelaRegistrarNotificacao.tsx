@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
@@ -6,7 +6,7 @@ import {
 import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { listarCarrosApi, listarMotosApi, registrarNotificacaoApi, editarNotificacaoApi, Carro, Moto, Notificacao } from '../../services/api'
+import { registrarNotificacaoApi, editarNotificacaoApi, Notificacao } from '../../services/api'
 import { agendarNotificacao, cancelarNotificacao, salvarMapeamento, buscarOsNotifId } from '../../services/notificacoes'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { useAuth } from '../../contexts/AuthContext'
@@ -16,10 +16,9 @@ import { BotaoMic, IndicadorGravando } from '../../components/BotaoMic'
 import { CampoData, formatarData } from '../../components/CampoData'
 import { useVeiculo } from '../../contexts/VeiculoContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
+import { useConfirmarSaida } from '../../hooks/useConfirmarSaida'
 
 interface Props { navigation: any; route: any }
-
-type VeiculoItem = { id: string; label: string }
 
 function parseDateStr(dateStr: string): Date {
   const [d, m, y] = dateStr.split('/').map(Number)
@@ -55,9 +54,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   const [carregando, setCarregando] = useState(false)
   const [erros,      setErros]      = useState<Record<string, string>>({})
 
-  const [veiculos,           setVeiculos]           = useState<VeiculoItem[]>([])
-  const [veiculoId,          setVeiculoId]          = useState<string | null>(edit?.veiculoId ?? null)
-  const [carregandoVeiculos, setCarregandoVeiculos] = useState(true)
+  const [veiculoId] = useState<string | null>(edit?.veiculoId ?? veiculoAtivo?.id ?? null)
 
   const { gravando: gravandoMensagem, iniciarGravacao, pararGravacao } = useVoiceInput(
     text => setMensagem(prev => prev ? prev + ' ' + text : text)
@@ -76,25 +73,6 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
     }
   }, [])
 
-  useEffect(() => {
-    async function carregarVeiculos() {
-      try {
-        const [resCarros, resMotos] = await Promise.all([listarCarrosApi(), listarMotosApi()])
-        const lista: VeiculoItem[] = [
-          ...resCarros.data.map((c: Carro) => ({ id: c.id, label: `🚗 ${c.marca} ${c.modelo} — ${c.placa}` })),
-          ...resMotos.data.map((m: Moto)  => ({ id: m.id, label: `🏍️ ${m.marca} ${m.modelo} — ${m.placa}` })),
-        ]
-        setVeiculos(lista)
-        if (!edit && veiculoAtivo) setVeiculoId(veiculoAtivo.id)
-      } catch {
-        // sem veículos ainda
-      } finally {
-        setCarregandoVeiculos(false)
-      }
-    }
-    carregarVeiculos()
-  }, [])
-
   async function toggleMic() {
     if (gravandoMensagem) {
       await pararGravacao()
@@ -102,6 +80,12 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
       await iniciarGravacao()
     }
   }
+
+  const temAlteracao = useCallback(() => {
+    if (edit) return true
+    return !!tipo || !!mensagem.trim()
+  }, [edit, tipo, mensagem])
+  const handleVoltar = useConfirmarSaida(navigation, temAlteracao)
 
   function limparErro(campo: string) {
     setErros(e => ({ ...e, [campo]: '' }))
@@ -127,7 +111,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
         tipo:      tipo === 'Outro' ? tipoOutro.trim() : tipo,
         mensagem:  mensagem.trim(),
         data:      formatarData(data),
-        veiculoId: veiculoId ?? undefined,
+        veiculoId: veiculoAtivo?.id ?? veiculoId ?? undefined,
       }
       try {
         if (edit) {
@@ -162,7 +146,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
     <SafeAreaView style={estilos.safe} edges={['top']}>
       <View style={estilos.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleVoltar}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessible={true}
           accessibilityLabel="Voltar"
@@ -235,27 +219,19 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
 
           <View style={{ height: ESPACOS.md }} />
 
-          {/* Veículo (opcional) */}
-          <AppText style={estilos.label}>Veículo <AppText style={estilos.opcional}>(opcional)</AppText></AppText>
-          {carregandoVeiculos ? (
-            <ActivityIndicator color={CORES.secundaria} style={{ marginVertical: ESPACOS.sm }} />
-          ) : veiculos.length === 0 ? (
-            <AppText style={estilos.semVeiculo}>Nenhum veículo cadastrado.</AppText>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.chipScroll}>
-              {veiculos.map(v => (
-                <TouchableOpacity
-                  key={v.id}
-                  style={[estilos.chip, veiculoId === v.id && estilos.chipAtivo]}
-                  onPress={() => setVeiculoId(prev => prev === v.id ? null : v.id)}
-                >
-                  <AppText style={[estilos.chipTexto, veiculoId === v.id && estilos.chipTextoAtivo]} numberOfLines={1}>
-                    {v.label}
-                  </AppText>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
+          <AppText style={estilos.label}>Veículo ativo</AppText>
+          <View style={estilos.cardVeiculoAtivo}>
+            <Ionicons
+              name={veiculoAtivo ? 'checkmark-circle' : 'alert-circle-outline'}
+              size={18}
+              color={veiculoAtivo ? CORES.secundaria : CORES.atencao}
+            />
+            <AppText style={estilos.cardVeiculoTexto} numberOfLines={1}>
+              {veiculoAtivo
+                ? `${veiculoAtivo.marca} ${veiculoAtivo.modelo} — ${veiculoAtivo.placa}`
+                : 'Nenhum veículo ativo. Ative um na página inicial.'}
+            </AppText>
+          </View>
 
           <View style={{ height: ESPACOS.md }} />
 
@@ -388,4 +364,22 @@ const estilos = StyleSheet.create({
     marginTop: ESPACOS.md,
   },
   textoBotao:     { color: CORES.branco, fontSize: FONTES.media, fontWeight: '700' },
+  cardVeiculoAtivo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8FAF0',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: CORES.secundaria,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+    marginBottom: ESPACOS.sm,
+  },
+  cardVeiculoTexto: {
+    flex: 1,
+    fontSize: FONTES.normal,
+    color: CORES.primaria,
+    fontWeight: '600',
+  },
 })

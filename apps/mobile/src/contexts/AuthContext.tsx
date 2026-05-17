@@ -27,7 +27,8 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData)
 
 const TOKEN_KEY = '@anotai:token'
 const USER_KEY  = '@anotai:usuario'
-const FOTO_KEY  = '@anotai:foto_perfil'
+const fotoKey   = (id: string) => `@anotai:foto_perfil:${id}`
+const perfilKey = (id: string) => `@anotai:perfil:${id}`
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [proprietario, setProprietario] = useState<Proprietario | null>(null)
@@ -64,11 +65,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       [USER_KEY,  JSON.stringify(data.proprietario)],
     ])
     try {
-      const fotoSalva = await AsyncStorage.getItem(FOTO_KEY)
+      const fotoSalva = await AsyncStorage.getItem(fotoKey(data.proprietario.id))
       if (fotoSalva) {
         const comFoto = { ...data.proprietario, fotoPerfil: fotoSalva }
         setProprietario(comFoto)
         await AsyncStorage.setItem(USER_KEY, JSON.stringify(comFoto))
+      }
+    } catch { /* ignora */ }
+    try {
+      const perfilSalvo = await AsyncStorage.getItem(perfilKey(data.proprietario.id))
+      if (perfilSalvo) {
+        const dadosSalvos = JSON.parse(perfilSalvo)
+        const comPerfil = {
+          ...data.proprietario,
+          ...dadosSalvos,
+          fotoPerfil: (await AsyncStorage.getItem(fotoKey(data.proprietario.id))) ?? undefined,
+        }
+        setProprietario(comPerfil)
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(comPerfil))
       }
     } catch { /* ignora */ }
   }
@@ -90,6 +104,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const atualizado = { ...proprietario, ...dados }
     setProprietario(atualizado)
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(atualizado))
+    await AsyncStorage.setItem(
+      perfilKey(proprietario.id),
+      JSON.stringify({ nome: dados.nome, apelido: dados.apelido, telefone: dados.telefone })
+    )
   }
 
   async function atualizarFotoPerfil(uri: string | null) {
@@ -98,9 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProprietario(atualizado)
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(atualizado))
     if (uri) {
-      await AsyncStorage.setItem(FOTO_KEY, uri)
+      await AsyncStorage.setItem(fotoKey(proprietario.id), uri)
     } else {
-      await AsyncStorage.removeItem(FOTO_KEY)
+      await AsyncStorage.removeItem(fotoKey(proprietario.id))
     }
   }
 

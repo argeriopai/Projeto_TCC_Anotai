@@ -229,3 +229,28 @@ github.com/argeriopai/Projeto_TCC_Anotai
 
 ### Comando para recuperar contexto no próximo chat:
 "Leia o CLAUDE.md e retome o desenvolvimento"
+
+## Sprint 10 — Integração Firebase (EM ANDAMENTO)
+
+### Firebase configurado:
+- Projeto: anotai-145e1
+- Authentication: E-mail/senha ativado
+- Firestore: southamerica-east1 (São Paulo)
+
+### firebaseConfig:
+apiKey: "AIzaSyAWxjgS3U-2_CSUcBLwi9jbJmPX6OnW0Jo"
+authDomain: "anotai-145e1.firebaseapp.com"
+projectId: "anotai-145e1"
+storageBucket: "anotai-145e1.firebasestorage.app"
+messagingSenderId: "143171299379"
+appId: "1:143171299379:web:6c191fb0e6a4e536665b46"
+
+### Próximos passos:
+1. Instalar dependências Firebase no projeto
+2. Criar src/services/firebase.ts
+3. Migrar AuthContext para Firebase Auth
+4. Migrar api.ts mock para Firebase Firestore
+5. Testar e gerar novo APK
+
+### Comando para recuperar contexto:
+"Leia o CLAUDE.md e retome o desenvolvimento"

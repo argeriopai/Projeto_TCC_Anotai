@@ -51,6 +51,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   )
   const [mensagem,   setMensagem]   = useState(edit?.mensagem ?? '')
   const [data,       setData]       = useState(() => edit?.data ? parseDateStr(edit.data) : new Date())
+  const [diasAntes,  setDiasAntes]  = useState<number>((edit as any)?.diasAntes ?? 1)
   const [carregando, setCarregando] = useState(false)
   const [erros,      setErros]      = useState<Record<string, string>>({})
 
@@ -98,7 +99,6 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
       Alert.alert('Campo obrigatório', 'Descreva o tipo de revisão.')
       return false
     }
-    if (!mensagem.trim()) e.mensagem = 'Informe a mensagem'
     setErros(e)
     return Object.keys(e).length === 0
   }
@@ -118,14 +118,14 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
           await editarNotificacaoApi(edit.id, payload)
           const osAntigo = await buscarOsNotifId(edit.id)
           if (osAntigo) await cancelarNotificacao(osAntigo)
-          const novoNotifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: edit.id })
+          const novoNotifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: edit.id, veiculoId: veiculoAtivo?.id ?? veiculoId ?? null, diasAntes }, proprietario?.id ?? undefined, diasAntes)
           if (novoNotifId) await salvarMapeamento(edit.id, novoNotifId)
           Alert.alert('Sucesso!', 'Revisão atualizada com sucesso.', [
             { text: 'OK', onPress: () => navigation.goBack() },
           ])
         } else {
           const apiRes = await registrarNotificacaoApi(payload)
-          const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: apiRes.data.id })
+          const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: apiRes.data.id, veiculoId: veiculoAtivo?.id ?? null, diasAntes }, proprietario?.id ?? undefined, diasAntes)
           if (notifId) await salvarMapeamento(apiRes.data.id, notifId)
           const msg = notifId
             ? 'Revisão registrada! Você receberá uma notificação no dia agendado.'
@@ -269,10 +269,28 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
             onChange={setData}
             permitirFuturo
           />
+          <AppText style={[estilos.label, { marginTop: ESPACOS.sm }]}>
+            Notificar com antecedência
+          </AppText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: ESPACOS.sm }}>
+            {[0, 1, 2, 3, 4, 5].map(d => (
+              <TouchableOpacity
+                key={d}
+                style={[estilos.chip, diasAntes === d && estilos.chipAtivo]}
+                onPress={() => setDiasAntes(d)}
+              >
+                <AppText style={[estilos.chipTexto, diasAntes === d && estilos.chipTextoAtivo]}>
+                  {d === 0 ? 'No dia' : `${d} dia${d > 1 ? 's' : ''} antes`}
+                </AppText>
+              </TouchableOpacity>
+            ))}
+          </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 8 }}>
             <Ionicons name="information-circle-outline" size={14} color="#666" style={{ marginRight: 4 }} />
             <AppText style={{ fontSize: 12, color: '#666' }}>
-              Você será notificado um dia antes
+              {diasAntes === 0
+                ? 'Você será notificado no dia do evento às 08:00'
+                : `Você será notificado ${diasAntes} dia${diasAntes > 1 ? 's' : ''} antes às 08:00`}
             </AppText>
           </View>
 

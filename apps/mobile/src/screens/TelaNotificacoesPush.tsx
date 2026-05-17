@@ -12,6 +12,7 @@ import { cancelarNotificacao, listarNotificacoesAgendadas, removerMapeamento } f
 import { listarNotificacoesApi } from '../services/api'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { useAuth } from '../contexts/AuthContext'
+import { useVeiculo } from '../contexts/VeiculoContext'
 
 interface Props { navigation: any }
 
@@ -24,7 +25,8 @@ function formatarDataHora(isoString: string): string {
 }
 
 export function TelaNotificacoesPush({ navigation }: Props) {
-  const { estaLogado } = useAuth()
+  const { estaLogado, proprietario } = useAuth()
+  const { veiculoAtivo } = useVeiculo()
   const [lista,      setLista]      = useState<Notifications.NotificationRequest[]>([])
   const [carregando, setCarregando] = useState(true)
 
@@ -70,7 +72,22 @@ export function TelaNotificacoesPush({ navigation }: Props) {
         const dB = (b.content.data as any)?.dataAgendada ?? ''
         return dA.localeCompare(dB)
       })
-      setLista(validas)
+
+      const minhas = validas.filter(n => {
+        const pid = (n.content.data as any)?.proprietarioId
+        if (!pid) return true
+        return pid === proprietario?.id
+      })
+
+      const doVeiculoAtivo = veiculoAtivo
+        ? minhas.filter(n => {
+            const vid = (n.content.data as any)?.veiculoId
+            if (!vid) return true
+            return vid === veiculoAtivo.id
+          })
+        : minhas
+
+      setLista(doVeiculoAtivo)
     } catch {
       setLista([])
     } finally {

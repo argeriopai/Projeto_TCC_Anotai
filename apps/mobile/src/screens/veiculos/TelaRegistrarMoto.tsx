@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -13,6 +13,7 @@ import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
 import { AvatarCircular } from '../../components/AvatarCircular'
+import { useConfirmarSaida } from '../../hooks/useConfirmarSaida'
 
 interface Props { navigation: any; route: any }
 
@@ -111,6 +112,15 @@ export function TelaRegistrarMoto({ navigation, route }: Props) {
   const [carregando, setCarregando] = useState(false)
   const [erros,      setErros]      = useState<Record<string, string>>({})
 
+  const temAlteracao = useCallback(() => {
+    if (edit) return true
+    return !!marcaSel || !!modelo.trim() || !!placa.trim() ||
+      !!cor.trim() || !!ano || !!freio || !!partida ||
+      !!marcaCustom.trim()
+  }, [edit, marcaSel, modelo, placa, cor, ano, freio,
+      partida, marcaCustom])
+  const handleVoltar = useConfirmarSaida(navigation, temAlteracao)
+
   function limparErro(campo: string) {
     setErros(e => ({ ...e, [campo]: '' }))
   }
@@ -202,7 +212,7 @@ export function TelaRegistrarMoto({ navigation, route }: Props) {
     <SafeAreaView style={estilos.safe} edges={['top']}>
       <View style={estilos.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleVoltar}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessible={true}
           accessibilityLabel="Voltar"

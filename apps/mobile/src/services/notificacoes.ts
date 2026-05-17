@@ -48,9 +48,11 @@ export async function agendarNotificacao(
   corpo: string,
   data: Date,
   extras?: Record<string, unknown>,
+  proprietarioId?: string,
+  diasAntes: number = 1,
 ): Promise<string | null> {
   const agendada = new Date(data)
-  agendada.setDate(agendada.getDate() - 1)
+  agendada.setDate(agendada.getDate() - diasAntes)
   agendada.setHours(8, 0, 0, 0)
 
   if (agendada <= new Date()) return null
@@ -61,7 +63,7 @@ export async function agendarNotificacao(
         title: `🔔 ${titulo}`,
         body: corpo,
         sound: true,
-        data: { dataAgendada: agendada.toISOString(), ...extras },
+        data: { dataAgendada: agendada.toISOString(), proprietarioId: proprietarioId ?? null, ...extras },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,

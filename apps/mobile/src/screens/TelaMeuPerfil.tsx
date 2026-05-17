@@ -206,20 +206,11 @@ export function TelaMeuPerfil({ navigation }: Props) {
   }
 
   function salvarSenha() {
-    if (!senhaAtual) {
-      Alert.alert('Atenção', 'Informe a senha atual.')
-      return
-    }
-    if (novaSenha.length < 6) {
-      Alert.alert('Atenção', 'A nova senha deve ter pelo menos 6 caracteres.')
-      return
-    }
-    if (novaSenha !== confirmarSenha) {
-      Alert.alert('Atenção', 'As senhas não coincidem.')
-      return
-    }
-    Alert.alert('Sucesso', 'Senha alterada com sucesso!')
-    cancelarSenha()
+    Alert.alert(
+      '🔒 Funcionalidade em desenvolvimento',
+      'A alteração de senha estará disponível na versão completa do app, com servidor ativo.\n\nPor enquanto, utilize a senha cadastrada originalmente.',
+      [{ text: 'Entendi', onPress: cancelarSenha }]
+    )
   }
 
   return (

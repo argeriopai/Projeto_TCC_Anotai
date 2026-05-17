@@ -12,6 +12,7 @@ import { cancelarNotificacao, listarNotificacoesAgendadas, removerMapeamento } f
 import { listarNotificacoesApi } from '../services/api'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { useAuth } from '../contexts/AuthContext'
+import { useVeiculo } from '../contexts/VeiculoContext'
 
 interface Props { navigation: any }
 
@@ -24,9 +25,11 @@ function formatarDataHora(isoString: string): string {
 }
 
 export function TelaNotificacoesPush({ navigation }: Props) {
-  const { estaLogado } = useAuth()
+  const { estaLogado, proprietario } = useAuth()
+  const { veiculoAtivo } = useVeiculo()
   const [lista,      setLista]      = useState<Notifications.NotificationRequest[]>([])
   const [carregando, setCarregando] = useState(true)
+  const [inativas,   setInativas]   = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!estaLogado) setLista([])
@@ -70,7 +73,32 @@ export function TelaNotificacoesPush({ navigation }: Props) {
         const dB = (b.content.data as any)?.dataAgendada ?? ''
         return dA.localeCompare(dB)
       })
-      setLista(validas)
+
+      const minhas = validas.filter(n => {
+        const pid = (n.content.data as any)?.proprietarioId
+        if (!pid) return true
+        return pid === proprietario?.id
+      })
+
+      const doVeiculoAtivo = veiculoAtivo
+        ? minhas.filter(n => {
+            const vid = (n.content.data as any)?.veiculoId
+            if (!vid) return true
+            return vid === veiculoAtivo.id
+          })
+        : minhas
+
+      setLista(doVeiculoAtivo)
+
+      try {
+        const res = await listarNotificacoesApi()
+        const idsInativos = new Set<string>(
+          res.data
+            .filter((n: any) => n.ativo === false)
+            .map((n: any) => n.id)
+        )
+        setInativas(idsInativos)
+      } catch { /* ignora */ }
     } catch {
       setLista([])
     } finally {
@@ -203,9 +231,19 @@ export function TelaNotificacoesPush({ navigation }: Props) {
                 accessibilityLabel={`Abrir revisão: ${titulo}`}
                 accessibilityRole="button"
               >
-                <View style={es.cardIcone}>
-                  <Ionicons name="notifications" size={22} color={CORES.secundaria} />
-                </View>
+                {(() => {
+                  const notifId = (item.content.data as any)?.notificacaoId
+                  const inativa = notifId ? inativas.has(notifId) : false
+                  return (
+                    <View style={[es.cardIcone, inativa && { backgroundColor: '#f0f0f0' }]}>
+                      <Ionicons
+                        name={inativa ? 'notifications-off-outline' : 'notifications'}
+                        size={22}
+                        color={inativa ? '#999' : CORES.secundaria}
+                      />
+                    </View>
+                  )
+                })()}
                 <View style={es.cardConteudo}>
                   <AppText style={es.cardTitulo} numberOfLines={1}>{titulo}</AppText>
                   {!!corpo && (

@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthGuard } from '../hooks/useAuthGuard'
+import { useVeiculo } from '../contexts/VeiculoContext'
 import { listarCarrosApi, listarMotosApi } from '../services/api'
 import { listarTodasFotos, FotoRegistro, temFotos, salvarFotos, buscarFotos } from '../utils/fotosStorage'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
@@ -54,6 +55,7 @@ interface ModalState {
 export function TelaGaleria({ navigation }: Props) {
   const { proprietario } = useAuth()
   const { requireAuth }  = useAuthGuard()
+  const { veiculoAtivo } = useVeiculo()
 
   const [carregando,     setCarregando]    = useState(true)
   const [veiculos,       setVeiculos]      = useState<VeiculoComFotos[]>([])
@@ -98,7 +100,10 @@ export function TelaGaleria({ navigation }: Props) {
         })),
       ].filter(v => v.registros.length > 0)
 
-      setVeiculos(lista)
+      const listaFiltrada = veiculoAtivo
+        ? lista.filter(v => v.id === veiculoAtivo.id)
+        : lista
+      setVeiculos(listaFiltrada)
     } catch {
       setVeiculos([])
     } finally {
@@ -239,6 +244,11 @@ export function TelaGaleria({ navigation }: Props) {
           <Ionicons name="images-outline" size={64} color={CORES.cinzaTexto} />
           <AppText style={es.semDadosTitulo}>Nenhuma foto encontrada</AppText>
           <AppText style={es.semDadosSub}>Adicione fotos ao registrar serviços e peças</AppText>
+          {!veiculoAtivo && (
+            <AppText style={{ textAlign: 'center', color: '#666', marginTop: 16, fontSize: 13 }}>
+              Ative um veículo na página inicial para ver suas fotos.
+            </AppText>
+          )}
         </View>
       ) : (
         <ScrollView style={es.scroll} contentContainerStyle={es.scrollConteudo} showsVerticalScrollIndicator={false}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
@@ -6,7 +6,7 @@ import {
 import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { listarCarrosApi, listarMotosApi, registrarNotificacaoApi, editarNotificacaoApi, Carro, Moto, Notificacao } from '../../services/api'
+import { registrarNotificacaoApi, editarNotificacaoApi, Notificacao } from '../../services/api'
 import { agendarNotificacao, cancelarNotificacao, salvarMapeamento, buscarOsNotifId } from '../../services/notificacoes'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { useAuth } from '../../contexts/AuthContext'
@@ -16,10 +16,9 @@ import { BotaoMic, IndicadorGravando } from '../../components/BotaoMic'
 import { CampoData, formatarData } from '../../components/CampoData'
 import { useVeiculo } from '../../contexts/VeiculoContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
+import { useConfirmarSaida } from '../../hooks/useConfirmarSaida'
 
 interface Props { navigation: any; route: any }
-
-type VeiculoItem = { id: string; label: string }
 
 function parseDateStr(dateStr: string): Date {
   const [d, m, y] = dateStr.split('/').map(Number)
@@ -52,12 +51,11 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   )
   const [mensagem,   setMensagem]   = useState(edit?.mensagem ?? '')
   const [data,       setData]       = useState(() => edit?.data ? parseDateStr(edit.data) : new Date())
+  const [diasAntes,  setDiasAntes]  = useState<number>((edit as any)?.diasAntes ?? 1)
   const [carregando, setCarregando] = useState(false)
   const [erros,      setErros]      = useState<Record<string, string>>({})
 
-  const [veiculos,           setVeiculos]           = useState<VeiculoItem[]>([])
-  const [veiculoId,          setVeiculoId]          = useState<string | null>(edit?.veiculoId ?? null)
-  const [carregandoVeiculos, setCarregandoVeiculos] = useState(true)
+  const [veiculoId] = useState<string | null>(edit?.veiculoId ?? veiculoAtivo?.id ?? null)
 
   const { gravando: gravandoMensagem, iniciarGravacao, pararGravacao } = useVoiceInput(
     text => setMensagem(prev => prev ? prev + ' ' + text : text)
@@ -76,25 +74,6 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
     }
   }, [])
 
-  useEffect(() => {
-    async function carregarVeiculos() {
-      try {
-        const [resCarros, resMotos] = await Promise.all([listarCarrosApi(), listarMotosApi()])
-        const lista: VeiculoItem[] = [
-          ...resCarros.data.map((c: Carro) => ({ id: c.id, label: `🚗 ${c.marca} ${c.modelo} — ${c.placa}` })),
-          ...resMotos.data.map((m: Moto)  => ({ id: m.id, label: `🏍️ ${m.marca} ${m.modelo} — ${m.placa}` })),
-        ]
-        setVeiculos(lista)
-        if (!edit && veiculoAtivo) setVeiculoId(veiculoAtivo.id)
-      } catch {
-        // sem veículos ainda
-      } finally {
-        setCarregandoVeiculos(false)
-      }
-    }
-    carregarVeiculos()
-  }, [])
-
   async function toggleMic() {
     if (gravandoMensagem) {
       await pararGravacao()
@@ -102,6 +81,12 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
       await iniciarGravacao()
     }
   }
+
+  const temAlteracao = useCallback(() => {
+    if (edit) return true
+    return !!tipo || !!mensagem.trim()
+  }, [edit, tipo, mensagem])
+  const handleVoltar = useConfirmarSaida(navigation, temAlteracao)
 
   function limparErro(campo: string) {
     setErros(e => ({ ...e, [campo]: '' }))
@@ -114,7 +99,6 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
       Alert.alert('Campo obrigatório', 'Descreva o tipo de revisão.')
       return false
     }
-    if (!mensagem.trim()) e.mensagem = 'Informe a mensagem'
     setErros(e)
     return Object.keys(e).length === 0
   }
@@ -127,21 +111,21 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
         tipo:      tipo === 'Outro' ? tipoOutro.trim() : tipo,
         mensagem:  mensagem.trim(),
         data:      formatarData(data),
-        veiculoId: veiculoId ?? undefined,
+        veiculoId: veiculoAtivo?.id ?? veiculoId ?? undefined,
       }
       try {
         if (edit) {
           await editarNotificacaoApi(edit.id, payload)
           const osAntigo = await buscarOsNotifId(edit.id)
           if (osAntigo) await cancelarNotificacao(osAntigo)
-          const novoNotifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: edit.id })
+          const novoNotifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: edit.id, veiculoId: veiculoAtivo?.id ?? veiculoId ?? null, diasAntes }, proprietario?.id ?? undefined, diasAntes)
           if (novoNotifId) await salvarMapeamento(edit.id, novoNotifId)
           Alert.alert('Sucesso!', 'Revisão atualizada com sucesso.', [
             { text: 'OK', onPress: () => navigation.goBack() },
           ])
         } else {
           const apiRes = await registrarNotificacaoApi(payload)
-          const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: apiRes.data.id })
+          const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: apiRes.data.id, veiculoId: veiculoAtivo?.id ?? null, diasAntes }, proprietario?.id ?? undefined, diasAntes)
           if (notifId) await salvarMapeamento(apiRes.data.id, notifId)
           const msg = notifId
             ? 'Revisão registrada! Você receberá uma notificação no dia agendado.'
@@ -162,7 +146,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
     <SafeAreaView style={estilos.safe} edges={['top']}>
       <View style={estilos.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleVoltar}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessible={true}
           accessibilityLabel="Voltar"
@@ -235,27 +219,19 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
 
           <View style={{ height: ESPACOS.md }} />
 
-          {/* Veículo (opcional) */}
-          <AppText style={estilos.label}>Veículo <AppText style={estilos.opcional}>(opcional)</AppText></AppText>
-          {carregandoVeiculos ? (
-            <ActivityIndicator color={CORES.secundaria} style={{ marginVertical: ESPACOS.sm }} />
-          ) : veiculos.length === 0 ? (
-            <AppText style={estilos.semVeiculo}>Nenhum veículo cadastrado.</AppText>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.chipScroll}>
-              {veiculos.map(v => (
-                <TouchableOpacity
-                  key={v.id}
-                  style={[estilos.chip, veiculoId === v.id && estilos.chipAtivo]}
-                  onPress={() => setVeiculoId(prev => prev === v.id ? null : v.id)}
-                >
-                  <AppText style={[estilos.chipTexto, veiculoId === v.id && estilos.chipTextoAtivo]} numberOfLines={1}>
-                    {v.label}
-                  </AppText>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
+          <AppText style={estilos.label}>Veículo ativo</AppText>
+          <View style={estilos.cardVeiculoAtivo}>
+            <Ionicons
+              name={veiculoAtivo ? 'checkmark-circle' : 'alert-circle-outline'}
+              size={18}
+              color={veiculoAtivo ? CORES.secundaria : CORES.atencao}
+            />
+            <AppText style={estilos.cardVeiculoTexto} numberOfLines={1}>
+              {veiculoAtivo
+                ? `${veiculoAtivo.marca} ${veiculoAtivo.modelo} — ${veiculoAtivo.placa}`
+                : 'Nenhum veículo ativo. Ative um na página inicial.'}
+            </AppText>
+          </View>
 
           <View style={{ height: ESPACOS.md }} />
 
@@ -293,10 +269,28 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
             onChange={setData}
             permitirFuturo
           />
+          <AppText style={[estilos.label, { marginTop: ESPACOS.sm }]}>
+            Notificar com antecedência
+          </AppText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: ESPACOS.sm }}>
+            {[0, 1, 2, 3, 4, 5].map(d => (
+              <TouchableOpacity
+                key={d}
+                style={[estilos.chip, diasAntes === d && estilos.chipAtivo]}
+                onPress={() => setDiasAntes(d)}
+              >
+                <AppText style={[estilos.chipTexto, diasAntes === d && estilos.chipTextoAtivo]}>
+                  {d === 0 ? 'No dia' : `${d} dia${d > 1 ? 's' : ''} antes`}
+                </AppText>
+              </TouchableOpacity>
+            ))}
+          </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 8 }}>
             <Ionicons name="information-circle-outline" size={14} color="#666" style={{ marginRight: 4 }} />
             <AppText style={{ fontSize: 12, color: '#666' }}>
-              Você será notificado um dia antes
+              {diasAntes === 0
+                ? 'Você será notificado no dia do evento às 08:00'
+                : `Você será notificado ${diasAntes} dia${diasAntes > 1 ? 's' : ''} antes às 08:00`}
             </AppText>
           </View>
 
@@ -388,4 +382,22 @@ const estilos = StyleSheet.create({
     marginTop: ESPACOS.md,
   },
   textoBotao:     { color: CORES.branco, fontSize: FONTES.media, fontWeight: '700' },
+  cardVeiculoAtivo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8FAF0',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: CORES.secundaria,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+    marginBottom: ESPACOS.sm,
+  },
+  cardVeiculoTexto: {
+    flex: 1,
+    fontSize: FONTES.normal,
+    color: CORES.primaria,
+    fontWeight: '600',
+  },
 })

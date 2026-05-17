@@ -337,10 +337,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
             valor={diasAntesStr}
             placeholder="Selecione a antecedência"
             opcoes={OPCOES_DIAS_ANTES}
-            onChange={v => {
-              console.log('diasAntesStr selecionado:', v)
-              setDiasAntesStr(v)
-            }}
+            onChange={v => setDiasAntesStr(v)}
           />
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 8 }}>
             <Ionicons name="information-circle-outline" size={14} color="#666" style={{ marginRight: 4 }} />

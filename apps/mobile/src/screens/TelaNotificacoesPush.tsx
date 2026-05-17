@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import * as Notifications from 'expo-notifications'
 import { cancelarNotificacao, listarNotificacoesAgendadas, removerMapeamento } from '../services/notificacoes'
-import { listarNotificacoesApi } from '../services/api'
+import { listarNotificacoesApi, listarCarrosApi, listarMotosApi } from '../services/api'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { useAuth } from '../contexts/AuthContext'
 import { useVeiculo } from '../contexts/VeiculoContext'
@@ -29,7 +29,8 @@ export function TelaNotificacoesPush({ navigation }: Props) {
   const { veiculoAtivo } = useVeiculo()
   const [lista,      setLista]      = useState<Notifications.NotificationRequest[]>([])
   const [carregando, setCarregando] = useState(true)
-  const [inativas,   setInativas]   = useState<Set<string>>(new Set())
+  const [inativas,    setInativas]    = useState<Set<string>>(new Set())
+  const [veiculosMap, setVeiculosMap] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!estaLogado) setLista([])
@@ -98,6 +99,21 @@ export function TelaNotificacoesPush({ navigation }: Props) {
             .map((n: any) => n.id)
         )
         setInativas(idsInativos)
+      } catch { /* ignora */ }
+
+      try {
+        const [resCarros, resMotos] = await Promise.all([
+          listarCarrosApi(),
+          listarMotosApi(),
+        ])
+        const mapa: Record<string, string> = {}
+        resCarros.data.forEach((c: any) => {
+          mapa[c.id] = `${c.marca} ${c.modelo} — ${c.placa}`
+        })
+        resMotos.data.forEach((m: any) => {
+          mapa[m.id] = `${m.marca} ${m.modelo} — ${m.placa}`
+        })
+        setVeiculosMap(mapa)
       } catch { /* ignora */ }
     } catch {
       setLista([])
@@ -220,7 +236,8 @@ export function TelaNotificacoesPush({ navigation }: Props) {
           {lista.map(item => {
             const titulo = item.content.title?.replace('🔔 ', '') ?? 'Lembrete'
             const corpo  = item.content.body ?? ''
-            const dataStr = (item.content.data as any)?.dataAgendada
+            const dataEvento = (item.content.data as any)?.dataEvento
+            const dataStr = dataEvento ?? (item.content.data as any)?.dataAgendada
             return (
               <TouchableOpacity
                 key={item.identifier}
@@ -246,6 +263,18 @@ export function TelaNotificacoesPush({ navigation }: Props) {
                 })()}
                 <View style={es.cardConteudo}>
                   <AppText style={es.cardTitulo} numberOfLines={1}>{titulo}</AppText>
+                  {(() => {
+                    const vid = (item.content.data as any)?.veiculoId
+                    const labelVeiculo = vid ? veiculosMap[vid] : null
+                    return labelVeiculo ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                        <Ionicons name="car-outline" size={12} color={CORES.textoSecundario} />
+                        <AppText style={[es.cardCorpo, { fontSize: 11, color: CORES.textoSecundario }]} numberOfLines={1}>
+                          {labelVeiculo}
+                        </AppText>
+                      </View>
+                    ) : null
+                  })()}
                   {!!corpo && (
                     <AppText style={es.cardCorpo} numberOfLines={2}>{corpo}</AppText>
                   )}

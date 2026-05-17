@@ -63,7 +63,7 @@ export async function agendarNotificacao(
         title: `🔔 ${titulo}`,
         body: corpo,
         sound: true,
-        data: { dataAgendada: agendada.toISOString(), proprietarioId: proprietarioId ?? null, ...extras },
+        data: { dataAgendada: agendada.toISOString(), dataEvento: data.toISOString(), proprietarioId: proprietarioId ?? null, ...extras },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,

@@ -28,6 +28,7 @@ apps/mobile/
 - Sprint 6: Isolamento de dados no logout e no mock (getPid)
 - Sprint 7: Guard visitante, recuperação de sessão, sync lembretes ↔ registro
 - Sprint 8: Modal boas-vindas visitante, Esqueci minha senha, máscara de placa, maxLength campos, auto-limpeza notificações vencidas, campo livre "Outro", bloqueio placa duplicada
+- Sprint 9: Galeria filtrada por veículo ativo, chips → CampoDropdown, antecedência configurável, isolamento por usuário/veículo, ícone sino ativo/inativo, veículo no card de notificação
 
 ## Sprint 3 — CONCLUÍDO
 - 5 telas de consulta ✅
@@ -161,6 +162,48 @@ apps/mobile/
 - TelaRegistrarMoto: mesma lógica com ordem invertida (motos primeiro, carros depois)
 - Comparação normalizada: remove hífen, força maiúsculas em ambos os lados
 
+## Sprint 9 — CONCLUÍDO
+
+### 9A — Galeria filtrada pelo veículo ativo ✅
+- TelaGaleria: importa `useVeiculo`; filtra lista de veículos por `veiculoAtivo.id` quando há veículo ativo
+- Estado vazio exibe mensagem "Ative um veículo para ver suas fotos" quando nenhum veículo está ativo
+
+### 9B — Chips de tipo de serviço por categoria (TelaRegistrarServico) ✅
+- `TIPOS_SERVICO_CARRO` e `TIPOS_SERVICO_MOTO` já existiam; chips substituídos por `CampoDropdown` (Modal + FlatList)
+- Opções filtradas por `veiculoAtivo?.tipo`: moto → TIPOS_SERVICO_MOTO, carro → TIPOS_SERVICO_CARRO
+- TextInput "Outro" mantido abaixo do dropdown quando `tipo === 'Outro'`
+
+### 9C — CampoDropdown em TelaRegistrarNotificacao ✅
+- `TIPOS_REVISAO_CARRO` e `TIPOS_REVISAO_MOTO` definidos (mesma lista, inclui "Outro")
+- `OPCOES_DIAS_ANTES = ['No dia do evento', '1 dia antes', ..., '5 dias antes']`
+- Chips de "Tipo de revisão" e "Antecedência" substituídos por `CampoDropdown`
+- `diasAntesStr: string` → `parseDiasAntes()` converte para número (0 para "No dia do evento")
+- `temAlteracao` verifica apenas `!!tipo || !!mensagem.trim()` (veiculoId removido para evitar falso positivo)
+- `validar()` não exige mensagem preenchida (campo opcional)
+
+### 9D — Antecedência configurável em agendarNotificacao ✅
+- `notificacoes.ts`: `agendarNotificacao` aceita `diasAntes: number = 1` como 6º parâmetro
+- Subtrai `diasAntes` dias da data do evento antes de definir horário 08h
+- Salva `dataEvento` (data original do evento) em `content.data` além de `dataAgendada`
+- Extras incluem `{ notificacaoId, veiculoId, diasAntes }` em ambas as chamadas
+
+### 9E — Isolamento de notificações por usuário e veículo ✅
+- `carregarLista()`: filtra por `proprietarioId` (notificações sem campo sempre passam — retrocompatível)
+- Filtra por `veiculoAtivo.id` quando há veículo ativo (sem `veiculoId` sempre passa)
+- Ordena por `dataAgendada` após filtragem
+
+### 9F — Ícone sino reflete estado ativo/inativo da revisão ✅
+- `carregarLista()` busca notificações da API, constrói `inativas: Set<string>` (onde `ativo === false`)
+- Card: ícone `notifications-off-outline` cinza se inativa, `notifications` verde se ativa
+
+### 9G — Data do evento no card de notificação ✅
+- `dataStr` prefere `dataEvento` (data original) sobre `dataAgendada` (data de disparo)
+- `formatarDataHora()` exibe `dd/mm/aaaa às 08:00`
+
+### 9H — Veículo no card de notificação ✅
+- `carregarLista()` busca todos os carros e motos da API, monta `veiculosMap: Record<string, string>` → `{ [id]: "marca modelo — placa" }`
+- Card exibe linha com ícone `car-outline` + nome do veículo abaixo do título (quando disponível)
+
 ## Convenções do projeto
 - Estilos: StyleSheet.create com variáveis
 - Nomes em português (telas, contextos, funções)
@@ -170,7 +213,7 @@ apps/mobile/
 ## Repositório
 github.com/argeriopai/Projeto_TCC_Anotai
 
-## Próximas tarefas — Sprint 8
+## Próximas tarefas — Sprint 10
 
 ### Formulário de avaliação do app (pesquisa de usabilidade)
 - Criar segundo Google Forms com máximo 5 perguntas

@@ -341,11 +341,11 @@ export function TelaHome({ navigation }: Props) {
                         ? <Ionicons name="car-outline" size={28} color={ativo ? CORES.secundaria : CORES.cinzaTexto} />
                         : <MaterialCommunityIcons name="motorbike" size={28} color={ativo ? CORES.secundaria : CORES.cinzaTexto} />
                       }
-                      <AppText style={[estilos.cardVeiculoPlaca, ativo && { color: CORES.secundaria }]} numberOfLines={1}>
-                        {item.placa}
+                      <AppText style={[estilos.cardPlaca, ativo && estilos.cardPlacaAtiva]} numberOfLines={1}>
+                        {item.marca} {item.modelo}
                       </AppText>
-                      <AppText style={estilos.cardVeiculoModelo} numberOfLines={1}>
-                        {item.modelo}
+                      <AppText style={estilos.cardModelo} numberOfLines={1}>
+                        {item.placa}
                       </AppText>
                       {ativo && (
                         <View style={estilos.badgeAtivo}>
@@ -719,6 +719,18 @@ const estilos = StyleSheet.create({
   },
   cardAtivo:           { borderColor: CORES.secundaria },
   cardInativo:         { borderColor: '#E0E0E0' },
+  cardPlaca: {
+    fontSize: FONTES.normal,
+    fontWeight: '700',
+    color: CORES.pretinho,
+    marginTop: 4,
+  },
+  cardPlacaAtiva:      { color: CORES.secundaria },
+  cardModelo: {
+    fontSize: FONTES.pequena,
+    color: CORES.cinzaTexto,
+    marginTop: 2,
+  },
   cardVeiculoPlaca: {
     fontSize: FONTES.normal,
     fontWeight: '700',

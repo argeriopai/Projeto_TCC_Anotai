@@ -29,6 +29,7 @@ export function TelaNotificacoesPush({ navigation }: Props) {
   const { veiculoAtivo } = useVeiculo()
   const [lista,      setLista]      = useState<Notifications.NotificationRequest[]>([])
   const [carregando, setCarregando] = useState(true)
+  const [inativas,   setInativas]   = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!estaLogado) setLista([])
@@ -88,6 +89,16 @@ export function TelaNotificacoesPush({ navigation }: Props) {
         : minhas
 
       setLista(doVeiculoAtivo)
+
+      try {
+        const res = await listarNotificacoesApi()
+        const idsInativos = new Set<string>(
+          res.data
+            .filter((n: any) => n.ativo === false)
+            .map((n: any) => n.id)
+        )
+        setInativas(idsInativos)
+      } catch { /* ignora */ }
     } catch {
       setLista([])
     } finally {
@@ -220,9 +231,19 @@ export function TelaNotificacoesPush({ navigation }: Props) {
                 accessibilityLabel={`Abrir revisão: ${titulo}`}
                 accessibilityRole="button"
               >
-                <View style={es.cardIcone}>
-                  <Ionicons name="notifications" size={22} color={CORES.secundaria} />
-                </View>
+                {(() => {
+                  const notifId = (item.content.data as any)?.notificacaoId
+                  const inativa = notifId ? inativas.has(notifId) : false
+                  return (
+                    <View style={[es.cardIcone, inativa && { backgroundColor: '#f0f0f0' }]}>
+                      <Ionicons
+                        name={inativa ? 'notifications-off-outline' : 'notifications'}
+                        size={22}
+                        color={inativa ? '#999' : CORES.secundaria}
+                      />
+                    </View>
+                  )
+                })()}
                 <View style={es.cardConteudo}>
                   <AppText style={es.cardTitulo} numberOfLines={1}>{titulo}</AppText>
                   {!!corpo && (

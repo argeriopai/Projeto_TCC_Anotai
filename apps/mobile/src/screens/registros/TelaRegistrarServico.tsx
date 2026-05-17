@@ -27,6 +27,28 @@ function parseDateStr(dateStr: string): Date {
   return new Date(y, m - 1, d)
 }
 
+const TIPOS_SERVICO_CARRO = [
+  'Troca de óleo + filtro de combustível',
+  'Troca de óleo + filtro de combustível + filtro de gasolina',
+  'Troca de óleo + filtro de combustível + filtro de gasolina + filtros de ar',
+  'Rodízio de pneus',
+  'Troca correia dentada',
+  'Revisão bateria',
+  'Revisão pastilhas de freio',
+  'Vencimento IPVA',
+  'Vencimento seguro',
+  'Outro',
+]
+
+const TIPOS_SERVICO_MOTO = [
+  'Troca de óleo + filtro de combustível',
+  'Kit relação (corrente, coroa e pinhão)',
+  'Sistema de freios (pastilhas, sapatas e fluido)',
+  'Vencimento IPVA',
+  'Vencimento seguro',
+  'Outro',
+]
+
 export function TelaRegistrarServico({ navigation, route }: Props) {
   const edit: Servico | undefined = route.params?.registroParaEditar
   const { proprietario } = useAuth()
@@ -45,7 +67,16 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
   const garantiaRef       = useRef<TextInput>(null)
   const kilometragemRef   = useRef<TextInput>(null)
 
-  const [tipo,                    setTipo]                    = useState(edit?.tipo ?? '')
+  const tipoInicial = edit
+    ? ([...TIPOS_SERVICO_CARRO, ...TIPOS_SERVICO_MOTO].includes(edit.tipo ?? '')
+        ? edit.tipo ?? ''
+        : 'Outro')
+    : ''
+  const [tipo,                    setTipo]                    = useState(tipoInicial)
+  const [tipoOutro, setTipoOutro] = useState(
+    edit && ![...TIPOS_SERVICO_CARRO, ...TIPOS_SERVICO_MOTO]
+      .includes(edit.tipo ?? '') ? edit.tipo ?? '' : ''
+  )
   const [descricao,               setDescricao]               = useState(edit?.descricao ?? '')
   const [data,                    setData]                    = useState(() => edit?.data ? parseDateStr(edit.data) : new Date())
   const [custo,                   setCusto]                   = useState(() => edit?.custo !== undefined ? mascaraMoeda(Math.round(edit.custo * 100).toString()) : '')
@@ -140,6 +171,10 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
       return false
     }
     if (!tipo.trim()) e.tipo    = 'Informe o tipo de serviço'
+    if (tipo === 'Outro' && !tipoOutro.trim()) {
+      Alert.alert('Campo obrigatório', 'Descreva o tipo de serviço.')
+      return false
+    }
     if (telefoneEstabelecimento && telefoneEstabelecimento.replace(/\D/g, '').length !== 11)
       e.telefoneEstabelecimento = 'Telefone inválido. Use o formato (99) 99999-9999'
     if (telefoneProfissional && telefoneProfissional.replace(/\D/g, '').length !== 11)
@@ -154,7 +189,7 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
       setCarregando(true)
       const payload = {
         veiculoId:               veiculoAtivo?.id ?? veiculoId!,
-        tipo:                    tipo.trim(),
+        tipo:                    tipo === 'Outro' ? tipoOutro.trim() : tipo,
         descricao:               descricao.trim()               || undefined,
         data:                    formatarData(data),
         custo:                   custo ? parseMoeda(custo) : undefined,
@@ -237,22 +272,51 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
           <View style={{ height: ESPACOS.md }} />
 
           <View style={estilos.campo}>
-            <AppText style={estilos.label}>Tipo de serviço <AppText style={estilos.obrig}>*</AppText></AppText>
-            <TextInput
-              ref={tipoRef}
-              style={[estilos.input, erros.tipo ? estilos.inputErro : null]}
-              value={tipo}
-              onChangeText={t => { setTipo(t); limparErro('tipo') }}
-              placeholder="Ex: Troca de óleo"
-              placeholderTextColor={CORES.placeholder}
-              autoCapitalize="sentences"
-              autoCorrect={false}
-              maxLength={50}
-              returnKeyType="next"
-              blurOnSubmit={false}
-              onSubmitEditing={() => descricaoRef.current?.focus()}
-            />
-            {!!erros.tipo && <AppText style={estilos.textoErro}>{erros.tipo}</AppText>}
+            <AppText style={estilos.label}>
+              Tipo de serviço <AppText style={estilos.obrig}>*</AppText>
+            </AppText>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: ESPACOS.xs }}
+            >
+              {(veiculoAtivo?.tipo === 'moto'
+                ? TIPOS_SERVICO_MOTO
+                : TIPOS_SERVICO_CARRO
+              ).map(t => (
+                <TouchableOpacity
+                  key={t}
+                  style={[estilos.chip, tipo === t && estilos.chipAtivo]}
+                  onPress={() => { setTipo(t); limparErro('tipo') }}
+                >
+                  <AppText
+                    style={[estilos.chipTexto, tipo === t && estilos.chipTextoAtivo]}
+                    numberOfLines={2}
+                  >
+                    {t}
+                  </AppText>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {tipo === 'Outro' && (
+              <TextInput
+                style={[estilos.input, !tipoOutro.trim() ? estilos.inputErro : null]}
+                placeholder="Descreva o tipo de serviço..."
+                placeholderTextColor={CORES.placeholder}
+                value={tipoOutro}
+                onChangeText={setTipoOutro}
+                autoCapitalize="sentences"
+                autoCorrect={false}
+                maxLength={50}
+                returnKeyType="next"
+              />
+            )}
+
+            {!!erros.tipo && (
+              <AppText style={estilos.textoErro}>{erros.tipo}</AppText>
+            )}
           </View>
 
           {/* Descrição com microfone */}

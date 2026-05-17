@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Modal, FlatList,
 } from 'react-native'
 import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -48,6 +48,62 @@ const TIPOS_SERVICO_MOTO = [
   'Vencimento seguro',
   'Outro',
 ]
+
+interface DropdownProps {
+  label: string
+  obrigatorio?: boolean
+  valor: string
+  placeholder: string
+  opcoes: string[]
+  erro?: string
+  onChange: (v: string) => void
+}
+
+function CampoDropdown({ label, obrigatorio, valor, placeholder, opcoes, erro, onChange }: DropdownProps) {
+  const [aberto, setAberto] = useState(false)
+  return (
+    <View style={estilos.campo}>
+      <AppText style={estilos.label}>
+        {label}{obrigatorio && <AppText style={estilos.obrig}> *</AppText>}
+      </AppText>
+      <TouchableOpacity
+        style={[estilos.dropdownBtn, erro ? estilos.inputErro : null]}
+        onPress={() => setAberto(true)}
+        activeOpacity={0.7}
+      >
+        <AppText style={[estilos.dropdownTexto, !valor && { color: CORES.placeholder }]}>
+          {valor || placeholder}
+        </AppText>
+        <Ionicons name="chevron-down" size={18} color={CORES.cinzaTexto} />
+      </TouchableOpacity>
+      {!!erro && <AppText style={estilos.textoErro}>{erro}</AppText>}
+      <Modal visible={aberto} transparent animationType="fade" onRequestClose={() => setAberto(false)}>
+        <TouchableOpacity style={estilos.overlay} activeOpacity={1} onPress={() => setAberto(false)}>
+          <View style={estilos.modalBox}>
+            <AppText style={estilos.modalTitulo}>{label}</AppText>
+            <FlatList
+              data={opcoes}
+              keyExtractor={item => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[estilos.opcaoItem, valor === item && estilos.opcaoAtiva]}
+                  onPress={() => { onChange(item); setAberto(false) }}
+                >
+                  <AppText style={[estilos.opcaoTexto, valor === item && estilos.opcaoTextoAtivo]}>
+                    {item}
+                  </AppText>
+                  {valor === item && (
+                    <Ionicons name="checkmark" size={18} color={CORES.secundaria} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  )
+}
 
 export function TelaRegistrarServico({ navigation, route }: Props) {
   const edit: Servico | undefined = route.params?.registroParaEditar
@@ -271,53 +327,26 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
 
           <View style={{ height: ESPACOS.md }} />
 
-          <View style={estilos.campo}>
-            <AppText style={estilos.label}>
-              Tipo de serviço <AppText style={estilos.obrig}>*</AppText>
-            </AppText>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: ESPACOS.xs }}
-            >
-              {(veiculoAtivo?.tipo === 'moto'
-                ? TIPOS_SERVICO_MOTO
-                : TIPOS_SERVICO_CARRO
-              ).map(t => (
-                <TouchableOpacity
-                  key={t}
-                  style={[estilos.chip, tipo === t && estilos.chipAtivo]}
-                  onPress={() => { setTipo(t); limparErro('tipo') }}
-                >
-                  <AppText
-                    style={[estilos.chipTexto, tipo === t && estilos.chipTextoAtivo]}
-                    numberOfLines={2}
-                  >
-                    {t}
-                  </AppText>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {tipo === 'Outro' && (
-              <TextInput
-                style={[estilos.input, !tipoOutro.trim() ? estilos.inputErro : null]}
-                placeholder="Descreva o tipo de serviço..."
-                placeholderTextColor={CORES.placeholder}
-                value={tipoOutro}
-                onChangeText={setTipoOutro}
-                autoCapitalize="sentences"
-                autoCorrect={false}
-                maxLength={50}
-                returnKeyType="next"
-              />
-            )}
-
-            {!!erros.tipo && (
-              <AppText style={estilos.textoErro}>{erros.tipo}</AppText>
-            )}
-          </View>
+          <CampoDropdown
+            label="Tipo de serviço"
+            obrigatorio
+            valor={tipo}
+            placeholder="Selecione o tipo de serviço"
+            opcoes={veiculoAtivo?.tipo === 'moto' ? TIPOS_SERVICO_MOTO : TIPOS_SERVICO_CARRO}
+            erro={erros.tipo}
+            onChange={t => { setTipo(t); limparErro('tipo') }}
+          />
+          {tipo === 'Outro' && (
+            <TextInput
+              style={[estilos.input, !tipoOutro.trim() && estilos.inputErro, { marginBottom: ESPACOS.md }]}
+              placeholder="Descreva o tipo de serviço..."
+              placeholderTextColor={CORES.placeholder}
+              value={tipoOutro}
+              onChangeText={setTipoOutro}
+              autoCapitalize="sentences"
+              maxLength={50}
+            />
+          )}
 
           {/* Descrição com microfone */}
           <View style={estilos.campo}>
@@ -603,4 +632,48 @@ const estilos = StyleSheet.create({
     color: CORES.primaria,
     fontWeight: '600',
   },
+  dropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: CORES.branco,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: CORES.borda,
+    paddingHorizontal: ESPACOS.md,
+    height: 50,
+  },
+  dropdownTexto: { fontSize: FONTES.normal, color: CORES.texto, flex: 1 },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: ESPACOS.md,
+  },
+  modalBox: {
+    backgroundColor: CORES.branco,
+    borderRadius: 16,
+    maxHeight: 400,
+    paddingVertical: ESPACOS.sm,
+  },
+  modalTitulo: {
+    fontSize: FONTES.normal,
+    fontWeight: '700',
+    color: CORES.primaria,
+    padding: ESPACOS.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  opcaoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: ESPACOS.md,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  opcaoAtiva:      { backgroundColor: '#E8FAF0' },
+  opcaoTexto:      { fontSize: FONTES.normal, color: CORES.texto, flex: 1 },
+  opcaoTextoAtivo: { color: CORES.primaria, fontWeight: '600' },
 })

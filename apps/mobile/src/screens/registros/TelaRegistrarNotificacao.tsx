@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Modal, FlatList,
 } from 'react-native'
 import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -25,7 +25,7 @@ function parseDateStr(dateStr: string): Date {
   return new Date(y, m - 1, d)
 }
 
-const TIPOS_REVISAO = [
+const TIPOS_REVISAO_CARRO = [
   'Revisão periódica',
   'Troca de óleo',
   'Vencimento do IPVA',
@@ -35,6 +35,81 @@ const TIPOS_REVISAO = [
   'Outro',
 ]
 
+const TIPOS_REVISAO_MOTO = [
+  'Revisão periódica',
+  'Troca de óleo',
+  'Vencimento do IPVA',
+  'Vencimento do seguro',
+  'Licenciamento',
+  'Pneus',
+  'Outro',
+]
+
+const OPCOES_DIAS_ANTES = [
+  'No dia do evento',
+  '1 dia antes',
+  '2 dias antes',
+  '3 dias antes',
+  '4 dias antes',
+  '5 dias antes',
+]
+
+interface DropdownProps {
+  label: string
+  obrigatorio?: boolean
+  valor: string
+  placeholder: string
+  opcoes: string[]
+  erro?: string
+  onChange: (v: string) => void
+}
+
+function CampoDropdown({ label, obrigatorio, valor, placeholder, opcoes, erro, onChange }: DropdownProps) {
+  const [aberto, setAberto] = useState(false)
+  return (
+    <View style={estilos.campo}>
+      <AppText style={estilos.label}>
+        {label}{obrigatorio && <AppText style={estilos.obrig}> *</AppText>}
+      </AppText>
+      <TouchableOpacity
+        style={[estilos.dropdownBtn, erro ? estilos.inputErro : null]}
+        onPress={() => setAberto(true)}
+        activeOpacity={0.7}
+      >
+        <AppText style={[estilos.dropdownTexto, !valor && { color: CORES.placeholder }]}>
+          {valor || placeholder}
+        </AppText>
+        <Ionicons name="chevron-down" size={18} color={CORES.cinzaTexto} />
+      </TouchableOpacity>
+      {!!erro && <AppText style={estilos.textoErro}>{erro}</AppText>}
+      <Modal visible={aberto} transparent animationType="fade" onRequestClose={() => setAberto(false)}>
+        <TouchableOpacity style={estilos.overlay} activeOpacity={1} onPress={() => setAberto(false)}>
+          <View style={estilos.modalBox}>
+            <AppText style={estilos.modalTitulo}>{label}</AppText>
+            <FlatList
+              data={opcoes}
+              keyExtractor={item => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[estilos.opcaoItem, valor === item && estilos.opcaoAtiva]}
+                  onPress={() => { onChange(item); setAberto(false) }}
+                >
+                  <AppText style={[estilos.opcaoTexto, valor === item && estilos.opcaoTextoAtivo]}>
+                    {item}
+                  </AppText>
+                  {valor === item && (
+                    <Ionicons name="checkmark" size={18} color={CORES.secundaria} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  )
+}
+
 export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   const edit: Notificacao | undefined = route.params?.registroParaEditar
   const { proprietario } = useAuth()
@@ -42,16 +117,22 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   const { requireAuth } = useAuthGuard()
   const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
 
+  const todostipos = [...TIPOS_REVISAO_CARRO, ...TIPOS_REVISAO_MOTO]
   const tipoInicial = edit
-    ? (TIPOS_REVISAO.includes(edit.tipo) ? edit.tipo : 'Outro')
+    ? (todostipos.includes(edit.tipo) ? edit.tipo : 'Outro')
     : ''
   const [tipo,      setTipo]      = useState(tipoInicial)
   const [tipoOutro, setTipoOutro] = useState(
-    edit && !TIPOS_REVISAO.slice(0, -1).includes(edit.tipo) ? edit.tipo : ''
+    edit && !TIPOS_REVISAO_CARRO.slice(0, -1).includes(edit.tipo) ? edit.tipo : ''
   )
   const [mensagem,   setMensagem]   = useState(edit?.mensagem ?? '')
   const [data,       setData]       = useState(() => edit?.data ? parseDateStr(edit.data) : new Date())
-  const [diasAntes,  setDiasAntes]  = useState<number>((edit as any)?.diasAntes ?? 1)
+  const [diasAntesStr, setDiasAntesStr] = useState(
+    edit ? (
+      (edit as any).diasAntes === 0 ? 'No dia do evento' :
+      `${(edit as any).diasAntes ?? 1} dia${((edit as any).diasAntes ?? 1) > 1 ? 's' : ''} antes`
+    ) : '1 dia antes'
+  )
   const [carregando, setCarregando] = useState(false)
   const [erros,      setErros]      = useState<Record<string, string>>({})
 
@@ -88,6 +169,11 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   }, [edit, tipo, mensagem])
   const handleVoltar = useConfirmarSaida(navigation, temAlteracao)
 
+  function parseDiasAntes(str: string): number {
+    if (str === 'No dia do evento') return 0
+    return parseInt(str) || 1
+  }
+
   function limparErro(campo: string) {
     setErros(e => ({ ...e, [campo]: '' }))
   }
@@ -118,14 +204,14 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
           await editarNotificacaoApi(edit.id, payload)
           const osAntigo = await buscarOsNotifId(edit.id)
           if (osAntigo) await cancelarNotificacao(osAntigo)
-          const novoNotifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: edit.id, veiculoId: veiculoAtivo?.id ?? veiculoId ?? null, diasAntes }, proprietario?.id ?? undefined, diasAntes)
+          const novoNotifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: edit.id, veiculoId: veiculoAtivo?.id ?? veiculoId ?? null, diasAntes: parseDiasAntes(diasAntesStr) }, proprietario?.id ?? undefined, parseDiasAntes(diasAntesStr))
           if (novoNotifId) await salvarMapeamento(edit.id, novoNotifId)
           Alert.alert('Sucesso!', 'Revisão atualizada com sucesso.', [
             { text: 'OK', onPress: () => navigation.goBack() },
           ])
         } else {
           const apiRes = await registrarNotificacaoApi(payload)
-          const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: apiRes.data.id, veiculoId: veiculoAtivo?.id ?? null, diasAntes }, proprietario?.id ?? undefined, diasAntes)
+          const notifId = await agendarNotificacao(tipo.trim(), mensagem.trim(), data, { notificacaoId: apiRes.data.id, veiculoId: veiculoAtivo?.id ?? null, diasAntes: parseDiasAntes(diasAntesStr) }, proprietario?.id ?? undefined, parseDiasAntes(diasAntesStr))
           if (notifId) await salvarMapeamento(apiRes.data.id, notifId)
           const msg = notifId
             ? 'Revisão registrada! Você receberá uma notificação no dia agendado.'
@@ -174,47 +260,26 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
         <ScrollView style={estilos.scroll} contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
 
           {/* Tipo de notificação */}
-          <AppText style={estilos.label}>Tipo <AppText style={estilos.obrig}>*</AppText></AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.chipScroll}>
-            {TIPOS_REVISAO.map(t => (
-              <TouchableOpacity
-                key={t}
-                style={[estilos.chip, tipo === t && estilos.chipAtivo]}
-                onPress={() => { setTipo(t); limparErro('tipo') }}
-                accessible={true}
-                accessibilityLabel={`Tipo de revisão: ${t}`}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: tipo === t }}
-              >
-                <AppText style={[estilos.chipTexto, tipo === t && estilos.chipTextoAtivo]}>{t}</AppText>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          {!!erros.tipo && <AppText style={estilos.textoErro}>{erros.tipo}</AppText>}
-
+          <CampoDropdown
+            label="Tipo"
+            obrigatorio
+            valor={tipo === 'Outro' ? '' : tipo}
+            placeholder="Selecione o tipo de revisão"
+            opcoes={veiculoAtivo?.tipo === 'moto' ? TIPOS_REVISAO_MOTO : TIPOS_REVISAO_CARRO}
+            erro={erros.tipo}
+            onChange={t => { setTipo(t); limparErro('tipo') }}
+          />
           {tipo === 'Outro' && (
-            <View style={{ marginTop: ESPACOS.sm, marginBottom: ESPACOS.sm }}>
-              <TextInput
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: erros.tipo ? '#e74c3c' : '#ddd',
-                  paddingHorizontal: ESPACOS.sm,
-                  paddingVertical: 12,
-                  fontSize: FONTES.normal,
-                  color: '#333',
-                }}
-                placeholder="Descreva o tipo de revisão..."
-                placeholderTextColor="#999"
-                value={tipoOutro}
-                onChangeText={txt => { setTipoOutro(txt) }}
-                autoCapitalize="sentences"
-                autoCorrect={false}
-                maxLength={50}
-                returnKeyType="next"
-              />
-            </View>
+            <TextInput
+              style={[estilos.input, !tipoOutro.trim() && estilos.inputErro, { marginBottom: ESPACOS.md }]}
+              placeholder="Descreva o tipo de revisão..."
+              placeholderTextColor={CORES.placeholder}
+              value={tipoOutro}
+              onChangeText={setTipoOutro}
+              autoCapitalize="sentences"
+              autoCorrect={false}
+              maxLength={50}
+            />
           )}
 
           <View style={{ height: ESPACOS.md }} />
@@ -269,28 +334,19 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
             onChange={setData}
             permitirFuturo
           />
-          <AppText style={[estilos.label, { marginTop: ESPACOS.sm }]}>
-            Notificar com antecedência
-          </AppText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: ESPACOS.sm }}>
-            {[0, 1, 2, 3, 4, 5].map(d => (
-              <TouchableOpacity
-                key={d}
-                style={[estilos.chip, diasAntes === d && estilos.chipAtivo]}
-                onPress={() => setDiasAntes(d)}
-              >
-                <AppText style={[estilos.chipTexto, diasAntes === d && estilos.chipTextoAtivo]}>
-                  {d === 0 ? 'No dia' : `${d} dia${d > 1 ? 's' : ''} antes`}
-                </AppText>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <CampoDropdown
+            label="Notificar com antecedência"
+            valor={diasAntesStr}
+            placeholder="Selecione a antecedência"
+            opcoes={OPCOES_DIAS_ANTES}
+            onChange={setDiasAntesStr}
+          />
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 8 }}>
             <Ionicons name="information-circle-outline" size={14} color="#666" style={{ marginRight: 4 }} />
             <AppText style={{ fontSize: 12, color: '#666' }}>
-              {diasAntes === 0
+              {parseDiasAntes(diasAntesStr) === 0
                 ? 'Você será notificado no dia do evento às 08:00'
-                : `Você será notificado ${diasAntes} dia${diasAntes > 1 ? 's' : ''} antes às 08:00`}
+                : `Você será notificado ${diasAntesStr} às 08:00`}
             </AppText>
           </View>
 
@@ -400,4 +456,48 @@ const estilos = StyleSheet.create({
     color: CORES.primaria,
     fontWeight: '600',
   },
+  dropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: CORES.branco,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: CORES.borda,
+    paddingHorizontal: ESPACOS.md,
+    height: 50,
+  },
+  dropdownTexto: { fontSize: FONTES.normal, color: CORES.texto, flex: 1 },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: ESPACOS.md,
+  },
+  modalBox: {
+    backgroundColor: CORES.branco,
+    borderRadius: 16,
+    maxHeight: 400,
+    paddingVertical: ESPACOS.sm,
+  },
+  modalTitulo: {
+    fontSize: FONTES.normal,
+    fontWeight: '700',
+    color: CORES.primaria,
+    padding: ESPACOS.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  opcaoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: ESPACOS.md,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  opcaoAtiva:      { backgroundColor: '#E8FAF0' },
+  opcaoTexto:      { fontSize: FONTES.normal, color: CORES.texto, flex: 1 },
+  opcaoTextoAtivo: { color: CORES.primaria, fontWeight: '600' },
 })

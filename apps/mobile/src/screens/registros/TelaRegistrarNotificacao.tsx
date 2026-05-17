@@ -303,7 +303,7 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
           {/* Mensagem com microfone */}
           <View style={estilos.campo}>
             <View style={estilos.labelRow}>
-              <AppText style={estilos.label}>Mensagem <AppText style={estilos.obrig}>*</AppText></AppText>
+              <AppText style={estilos.label}>Mensagem</AppText>
               <BotaoMic gravando={gravandoMensagem} onPress={toggleMic} />
             </View>
             {gravandoMensagem && <IndicadorGravando />}

@@ -28,7 +28,7 @@ apps/mobile/
 - Sprint 6: Isolamento de dados no logout e no mock (getPid)
 - Sprint 7: Guard visitante, recuperação de sessão, sync lembretes ↔ registro
 - Sprint 8: Modal boas-vindas visitante, Esqueci minha senha, máscara de placa, maxLength campos, auto-limpeza notificações vencidas, campo livre "Outro", bloqueio placa duplicada
-- Sprint 9: Galeria filtrada por veículo ativo, chips → CampoDropdown, antecedência configurável, isolamento por usuário/veículo, ícone sino ativo/inativo, veículo no card de notificação
+- Sprint 9: Galeria filtrada por veículo ativo, chips → CampoDropdown, antecedência configurável, isolamento por usuário/veículo, ícone sino ativo/inativo, veículo no card, card veículo com marca/modelo, foto e perfil persistem após logout/login, tipos de serviço/revisão em arquivo compartilhado
 
 ## Sprint 3 — CONCLUÍDO
 - 5 telas de consulta ✅
@@ -213,29 +213,19 @@ apps/mobile/
 ## Repositório
 github.com/argeriopai/Projeto_TCC_Anotai
 
-## Próximas tarefas — Sprint 10
-
-### Formulário de avaliação do app (pesquisa de usabilidade)
-- Criar segundo Google Forms com máximo 5 perguntas
-- Objetivo: validar usabilidade do app com testadores
-- Compor documentação do TCC
-
-### Feedbacks dos testadores a implementar
-- (listar aqui os feedbacks recebidos quando retomar)
-
-### Missão: atingir 150 respostas no formulário inicial
-- Link: https://forms.gle/BSM28Z4uZrU4qE899
-- Atual: ~39 respostas — precisam de mais 111
-
-### Comando para recuperar contexto no próximo chat:
-"Leia o CLAUDE.md e retome o desenvolvimento"
-
 ## Sprint 10 — Integração Firebase (EM ANDAMENTO)
 
-### Firebase configurado:
+### Sprint 9 — itens adicionais concluídos nesta sessão ✅
+- TelaHome: card de veículo exibe `Marca Modelo` (principal) e `Placa` (secundária)
+- TelaRegistrarServico: listas TIPOS_VEICULO_CARRO (27 itens) e TIPOS_VEICULO_MOTO (13 itens) extraídas para `src/constants/tiposServico.ts`
+- TelaRegistrarNotificacao: label "Tipo de revisão", diasAntes restaurado de content.data na edição
+- AuthContext: foto de perfil isolada por userId (`@anotai:foto_perfil:<id>`), persiste após logout/login
+- AuthContext: nome/telefone editados persistem após logout/login via `@anotai:perfil:<id>`
+
+### Firebase configurado no console:
 - Projeto: anotai-145e1
-- Authentication: E-mail/senha ativado
-- Firestore: southamerica-east1 (São Paulo)
+- Authentication: E-mail/senha ativado ✅
+- Firestore: southamerica-east1 (São Paulo) ✅
 
 ### firebaseConfig:
 apiKey: "AIzaSyAWxjgS3U-2_CSUcBLwi9jbJmPX6OnW0Jo"
@@ -245,12 +235,15 @@ storageBucket: "anotai-145e1.firebasestorage.app"
 messagingSenderId: "143171299379"
 appId: "1:143171299379:web:6c191fb0e6a4e536665b46"
 
-### Próximos passos:
-1. Instalar dependências Firebase no projeto
-2. Criar src/services/firebase.ts
-3. Migrar AuthContext para Firebase Auth
-4. Migrar api.ts mock para Firebase Firestore
+### Próximos passos — Sprint 10:
+1. Instalar dependências Firebase no projeto (firebase, @react-native-firebase ou SDK web)
+2. Criar src/services/firebase.ts com initializeApp + auth + firestore
+3. Migrar AuthContext para Firebase Auth (signIn, createUser, signOut)
+4. Migrar api.ts mock para Firebase Firestore (coleções: carros, motos, servicos, pecas, notificacoes)
 5. Testar e gerar novo APK
+
+### Feedbacks dos testadores a implementar:
+- (listar aqui os feedbacks recebidos quando retomar)
 
 ### Comando para recuperar contexto:
 "Leia o CLAUDE.md e retome o desenvolvimento"

@@ -7,7 +7,7 @@ import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { registrarNotificacaoApi, editarNotificacaoApi, Notificacao } from '../../services/api'
-import { agendarNotificacao, cancelarNotificacao, salvarMapeamento, buscarOsNotifId } from '../../services/notificacoes'
+import { agendarNotificacao, cancelarNotificacao, salvarMapeamento, buscarOsNotifId, listarNotificacoesAgendadas } from '../../services/notificacoes'
 import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { useAuth } from '../../contexts/AuthContext'
 import { AvatarCircular } from '../../components/AvatarCircular'
@@ -108,12 +108,29 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
   )
   const [mensagem,   setMensagem]   = useState(edit?.mensagem ?? '')
   const [data,       setData]       = useState(() => edit?.data ? parseDateStr(edit.data) : new Date())
-  const [diasAntesStr, setDiasAntesStr] = useState(
-    edit ? (
-      (edit as any).diasAntes === 0 ? 'No dia do evento' :
-      `${(edit as any).diasAntes ?? 1} dia${((edit as any).diasAntes ?? 1) > 1 ? 's' : ''} antes`
-    ) : '1 dia antes'
-  )
+  const [diasAntesStr, setDiasAntesStr] = useState('1 dia antes')
+
+  useEffect(() => {
+    if (!edit) return
+    async function carregarDiasAntes() {
+      try {
+        const todas = await listarNotificacoesAgendadas()
+        const notif = todas.find(n =>
+          (n.content.data as any)?.notificacaoId === edit.id
+        )
+        if (notif) {
+          const dias = (notif.content.data as any)?.diasAntes ?? 1
+          if (dias === 0) {
+            setDiasAntesStr('No dia do evento')
+          } else {
+            setDiasAntesStr(`${dias} dia${dias > 1 ? 's' : ''} antes`)
+          }
+        }
+      } catch { /* ignora */ }
+    }
+    carregarDiasAntes()
+  }, [edit?.id])
+
   const [carregando, setCarregando] = useState(false)
   const [erros,      setErros]      = useState<Record<string, string>>({})
 
@@ -320,7 +337,10 @@ export function TelaRegistrarNotificacao({ navigation, route }: Props) {
             valor={diasAntesStr}
             placeholder="Selecione a antecedência"
             opcoes={OPCOES_DIAS_ANTES}
-            onChange={setDiasAntesStr}
+            onChange={v => {
+              console.log('diasAntesStr selecionado:', v)
+              setDiasAntesStr(v)
+            }}
           />
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 8 }}>
             <Ionicons name="information-circle-outline" size={14} color="#666" style={{ marginRight: 4 }} />

@@ -29,6 +29,7 @@ apps/mobile/
 - Sprint 7: Guard visitante, recuperação de sessão, sync lembretes ↔ registro
 - Sprint 8: Modal boas-vindas visitante, Esqueci minha senha, máscara de placa, maxLength campos, auto-limpeza notificações vencidas, campo livre "Outro", bloqueio placa duplicada
 - Sprint 9: Galeria filtrada por veículo ativo, chips → CampoDropdown, antecedência configurável, isolamento por usuário/veículo, ícone sino ativo/inativo, veículo no card, card veículo com marca/modelo, foto e perfil persistem após logout/login, tipos de serviço/revisão em arquivo compartilhado
+- Sprint 10: Firebase Auth + Firestore integrados, mock removido, dados persistem na nuvem, node_modules removido do git
 
 ## Sprint 3 — CONCLUÍDO
 - 5 telas de consulta ✅
@@ -213,19 +214,23 @@ apps/mobile/
 ## Repositório
 github.com/argeriopai/Projeto_TCC_Anotai
 
-## Sprint 10 — Integração Firebase (EM ANDAMENTO)
+## Sprint 10 — Integração Firebase — CONCLUÍDO ✅
 
-### Sprint 9 — itens adicionais concluídos nesta sessão ✅
+### Sprint 9 — itens adicionais concluídos ✅
 - TelaHome: card de veículo exibe `Marca Modelo` (principal) e `Placa` (secundária)
 - TelaRegistrarServico: listas TIPOS_VEICULO_CARRO (27 itens) e TIPOS_VEICULO_MOTO (13 itens) extraídas para `src/constants/tiposServico.ts`
 - TelaRegistrarNotificacao: label "Tipo de revisão", diasAntes restaurado de content.data na edição
 - AuthContext: foto de perfil isolada por userId (`@anotai:foto_perfil:<id>`), persiste após logout/login
 - AuthContext: nome/telefone editados persistem após logout/login via `@anotai:perfil:<id>`
 
-### Firebase configurado no console:
-- Projeto: anotai-145e1
-- Authentication: E-mail/senha ativado ✅
-- Firestore: southamerica-east1 (São Paulo) ✅
+### Firebase — concluído ✅
+- `firebase.ts` criado (initializeApp, auth, db)
+- `AuthContext` migrado para Firebase Auth (signIn, createUser, signOut, onAuthStateChanged)
+- `firestoreService.ts` criado com 26 funções (carros, motos, serviços, peças, notificações)
+- `api.ts` mock removido (448 → 140 linhas) → redireciona para Firestore
+- Dados persistem na nuvem entre sessões e dispositivos
+- `node_modules` removido do rastreamento git (.gitignore corrigido)
+- Commits: ae9a39d2 (Firebase), e6b5d2ab (gitignore)
 
 ### firebaseConfig:
 apiKey: "AIzaSyAWxjgS3U-2_CSUcBLwi9jbJmPX6OnW0Jo"
@@ -235,12 +240,12 @@ storageBucket: "anotai-145e1.firebasestorage.app"
 messagingSenderId: "143171299379"
 appId: "1:143171299379:web:6c191fb0e6a4e536665b46"
 
-### Próximos passos — Sprint 10:
-1. Instalar dependências Firebase no projeto (firebase, @react-native-firebase ou SDK web)
-2. Criar src/services/firebase.ts com initializeApp + auth + firestore
-3. Migrar AuthContext para Firebase Auth (signIn, createUser, signOut)
-4. Migrar api.ts mock para Firebase Firestore (coleções: carros, motos, servicos, pecas, notificacoes)
-5. Testar e gerar novo APK
+## Sprint 11 — Geração do APK final
+
+### Próximos passos:
+1. Testar todas as funcionalidades com Firebase (carro, moto, serviço, peça, revisão, relatório)
+2. Gerar APK: `eas build --platform android --profile preview`
+3. Distribuir para testadores
 
 ### Feedbacks dos testadores a implementar:
 - (listar aqui os feedbacks recebidos quando retomar)

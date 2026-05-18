@@ -5,8 +5,12 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from 'firebase/auth'
-import { auth } from '../services/firebase'
+import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore'
+import { auth, db } from '../services/firebase'
 import { api } from '../services/api'
 
 // ─── Interfaces (idênticas — nenhuma tela quebra) ──────────────────────────────
@@ -30,6 +34,7 @@ interface AuthContextData {
   logout: () => Promise<void>
   atualizarPerfil: (dados: Partial<Pick<Proprietario, 'nome' | 'apelido' | 'telefone'>>) => Promise<void>
   atualizarFotoPerfil: (uri: string | null) => Promise<void>
+  excluirConta: (senha: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData)
@@ -142,6 +147,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
   }
 
+  async function excluirConta(senha: string) {
+    const user = auth.currentUser
+    if (!user) return
+    try {
+      const credential = EmailAuthProvider.credential(user.email!, senha)
+      await reauthenticateWithCredential(user, credential)
+    } catch {
+      throw new Error('Senha incorreta')
+    }
+    const uid = user.uid
+    const colecoes = ['carros', 'motos', 'servicos', 'pecas', 'notificacoes']
+    for (const col of colecoes) {
+      const q = query(collection(db, col), where('proprietarioId', '==', uid))
+      const snap = await getDocs(q)
+      await Promise.all(snap.docs.map(d => deleteDoc(d.ref)))
+    }
+    await deleteUser(user)
+    await AsyncStorage.multiRemove([fotoKey(uid), perfilKey(uid)])
+    await logout()
+  }
+
   async function atualizarFotoPerfil(uri: string | null) {
     if (!proprietario) return
     const atualizado: Proprietario = { ...proprietario, fotoPerfil: uri ?? undefined }
@@ -164,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       atualizarPerfil,
       atualizarFotoPerfil,
+      excluirConta,
     }}>
       {children}
     </AuthContext.Provider>

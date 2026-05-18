@@ -5,13 +5,19 @@ import {
 import { db } from './firebase'
 import type { Carro, Moto, Servico, Peca, Notificacao } from './api'
 
+function limparUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => v !== undefined)
+  ) as Partial<T>
+}
+
 // ─── CARROS ───────────────────────────────────────────────────────────────────
 
 export async function cadastrarCarroFirestore(
   proprietarioId: string,
   dados: Omit<Carro, 'id' | 'proprietarioId'>,
 ): Promise<Carro> {
-  const ref = await addDoc(collection(db, 'carros'), { ...dados, proprietarioId })
+  const ref = await addDoc(collection(db, 'carros'), limparUndefined({ ...dados, proprietarioId }))
   return { id: ref.id, proprietarioId, ...dados }
 }
 
@@ -23,7 +29,7 @@ export async function listarCarrosFirestore(proprietarioId: string): Promise<Car
 
 export async function atualizarCarroFirestore(id: string, dados: Partial<Carro>): Promise<Carro> {
   const ref = doc(db, 'carros', id)
-  await updateDoc(ref, dados as Record<string, unknown>)
+  await updateDoc(ref, limparUndefined(dados) as Record<string, unknown>)
   const snap = await getDoc(ref)
   return { id: snap.id, ...snap.data() } as Carro
 }
@@ -34,7 +40,7 @@ export async function cadastrarMotoFirestore(
   proprietarioId: string,
   dados: Omit<Moto, 'id' | 'proprietarioId'>,
 ): Promise<Moto> {
-  const ref = await addDoc(collection(db, 'motos'), { ...dados, proprietarioId })
+  const ref = await addDoc(collection(db, 'motos'), limparUndefined({ ...dados, proprietarioId }))
   return { id: ref.id, proprietarioId, ...dados }
 }
 
@@ -46,7 +52,7 @@ export async function listarMotosFirestore(proprietarioId: string): Promise<Moto
 
 export async function atualizarMotoFirestore(id: string, dados: Partial<Moto>): Promise<Moto> {
   const ref = doc(db, 'motos', id)
-  await updateDoc(ref, dados as Record<string, unknown>)
+  await updateDoc(ref, limparUndefined(dados) as Record<string, unknown>)
   const snap = await getDoc(ref)
   return { id: snap.id, ...snap.data() } as Moto
 }
@@ -63,7 +69,7 @@ export async function registrarServicoFirestore(
   proprietarioId: string,
   dados: Omit<Servico, 'id' | 'proprietarioId'>,
 ): Promise<Servico> {
-  const ref = await addDoc(collection(db, 'servicos'), { ...dados, proprietarioId })
+  const ref = await addDoc(collection(db, 'servicos'), limparUndefined({ ...dados, proprietarioId }))
   return { id: ref.id, proprietarioId, ...dados }
 }
 
@@ -80,7 +86,7 @@ export async function listarServicosFirestore(
 
 export async function atualizarServicoFirestore(id: string, dados: Partial<Servico>): Promise<Servico> {
   const ref = doc(db, 'servicos', id)
-  await updateDoc(ref, dados as Record<string, unknown>)
+  await updateDoc(ref, limparUndefined(dados) as Record<string, unknown>)
   const snap = await getDoc(ref)
   return { id: snap.id, ...snap.data() } as Servico
 }
@@ -95,7 +101,7 @@ export async function registrarPecaFirestore(
   proprietarioId: string,
   dados: Omit<Peca, 'id' | 'proprietarioId'>,
 ): Promise<Peca> {
-  const ref = await addDoc(collection(db, 'pecas'), { ...dados, proprietarioId })
+  const ref = await addDoc(collection(db, 'pecas'), limparUndefined({ ...dados, proprietarioId }))
   return { id: ref.id, proprietarioId, ...dados }
 }
 
@@ -112,7 +118,7 @@ export async function listarPecasFirestore(
 
 export async function atualizarPecaFirestore(id: string, dados: Partial<Peca>): Promise<Peca> {
   const ref = doc(db, 'pecas', id)
-  await updateDoc(ref, dados as Record<string, unknown>)
+  await updateDoc(ref, limparUndefined(dados) as Record<string, unknown>)
   const snap = await getDoc(ref)
   return { id: snap.id, ...snap.data() } as Peca
 }
@@ -127,7 +133,7 @@ export async function registrarNotificacaoFirestore(
   proprietarioId: string,
   dados: Omit<Notificacao, 'id' | 'proprietarioId'>,
 ): Promise<Notificacao> {
-  const ref = await addDoc(collection(db, 'notificacoes'), { ...dados, proprietarioId })
+  const ref = await addDoc(collection(db, 'notificacoes'), limparUndefined({ ...dados, proprietarioId }))
   return { id: ref.id, proprietarioId, ...dados }
 }
 
@@ -142,7 +148,7 @@ export async function atualizarNotificacaoFirestore(
   dados: Partial<Notificacao>,
 ): Promise<Notificacao> {
   const ref = doc(db, 'notificacoes', id)
-  await updateDoc(ref, dados as Record<string, unknown>)
+  await updateDoc(ref, limparUndefined(dados) as Record<string, unknown>)
   const snap = await getDoc(ref)
   return { id: snap.id, ...snap.data() } as Notificacao
 }

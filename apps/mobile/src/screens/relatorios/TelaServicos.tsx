@@ -174,13 +174,8 @@ export function TelaServicos({ navigation }: Props) {
       {!veiculoAtivo ? (
         <View style={estilos.centralizador}>
           <Ionicons name="car-outline" size={56} color={CORES.cinzaTexto} />
-          <AppText style={estilos.semDadosTitulo}>Nenhum veículo selecionado</AppText>
-          <AppText style={estilos.semDadosSub}>
-            Acesse Veículo e selecione um veículo para visualizar seus registros
-          </AppText>
-          <TouchableOpacity style={estilos.btnAdicionar} onPress={() => navigation.navigate('Veiculos')}>
-            <AppText style={estilos.btnAdicionarTexto}>Selecionar Veículo</AppText>
-          </TouchableOpacity>
+          <AppText style={estilos.semDadosTitulo}>Ative um veículo para ver os serviços</AppText>
+          <AppText style={estilos.semDadosSub}>Vá em Início e toque no seu veículo para ativá-lo</AppText>
         </View>
       ) : carregando ? (
         <View style={estilos.centralizador}>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, KeyboardAvoidingView, Platform, Image,
+  ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Modal,
 } from 'react-native'
 import { AppText } from '../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -112,7 +112,7 @@ function CampoSenha({ label, valor, onChange, mostrar, onToggle }: CampoSenhaPro
 // ── Tela principal ────────────────────────────────────────────────────────────
 
 export function TelaMeuPerfil({ navigation }: Props) {
-  const { proprietario, atualizarPerfil, atualizarFotoPerfil } = useAuth()
+  const { proprietario, atualizarPerfil, atualizarFotoPerfil, excluirConta } = useAuth()
 
   const [modoEditar, setModoEditar] = useState(false)
   const [modoSenha,  setModoSenha]  = useState(false)
@@ -127,6 +127,10 @@ export function TelaMeuPerfil({ navigation }: Props) {
   const [novaSenha,      setNovaSenha]      = useState('')
   const [confirmarSenha, setConfirmarSenha] = useState('')
   const [mostrarSenhas,  setMostrarSenhas]  = useState(false)
+
+  const [modalExcluir,       setModalExcluir]       = useState(false)
+  const [senhaExclusao,      setSenhaExclusao]      = useState('')
+  const [mostrarSenhaExclusao, setMostrarSenhaExclusao] = useState(false)
 
   const apelido      = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
   const dataCadastro = proprietario?.id ? extrairDataCadastro(proprietario.id) : '—'
@@ -213,6 +217,28 @@ export function TelaMeuPerfil({ navigation }: Props) {
     )
   }
 
+  async function confirmarExclusao() {
+    if (!senhaExclusao.trim()) {
+      Alert.alert('Atenção', 'Digite sua senha para confirmar.')
+      return
+    }
+    setCarregando(true)
+    try {
+      await excluirConta(senhaExclusao)
+      setModalExcluir(false)
+      setSenhaExclusao('')
+    } catch (e: any) {
+      Alert.alert(
+        'Erro',
+        e.message === 'Senha incorreta'
+          ? 'Senha incorreta. Verifique e tente novamente.'
+          : 'Não foi possível excluir a conta. Tente novamente.',
+      )
+    } finally {
+      setCarregando(false)
+    }
+  }
+
   return (
     <SafeAreaView style={estilos.safe} edges={['top']}>
 
@@ -241,6 +267,16 @@ export function TelaMeuPerfil({ navigation }: Props) {
             accessibilityRole="button"
           >
             <Ionicons name="home" size={20} color={CORES.secundaria} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={estilos.botaoExcluirHeader}
+            onPress={() => setModalExcluir(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessible={true}
+            accessibilityLabel="Excluir minha conta"
+            accessibilityRole="button"
+          >
+            <Ionicons name="trash-outline" size={18} color={CORES.erro} />
           </TouchableOpacity>
         </View>
       </View>
@@ -393,6 +429,62 @@ export function TelaMeuPerfil({ navigation }: Props) {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* MODAL EXCLUIR CONTA */}
+      <Modal
+        visible={modalExcluir}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setModalExcluir(false); setSenhaExclusao('') }}
+      >
+        <View style={estilos.modalOverlay}>
+          <View style={estilos.modalCard}>
+            <AppText style={estilos.modalTitulo}>Confirmar exclusão</AppText>
+            <AppText style={estilos.modalDescricao}>
+              Todos os seus dados serão apagados permanentemente. Digite sua senha para confirmar.
+            </AppText>
+            <View style={estilos.senhaLinha}>
+              <TextInput
+                style={[estilos.campoInput, { flex: 1 }]}
+                value={senhaExclusao}
+                onChangeText={setSenhaExclusao}
+                secureTextEntry={!mostrarSenhaExclusao}
+                placeholder="Sua senha"
+                placeholderTextColor={CORES.cinzaTexto}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                onPress={() => setMostrarSenhaExclusao(v => !v)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ paddingLeft: ESPACOS.sm }}
+              >
+                <Ionicons
+                  name={mostrarSenhaExclusao ? 'eye-off-outline' : 'eye-outline'}
+                  size={18}
+                  color={CORES.cinzaTexto}
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={[estilos.botoesLinha, { marginTop: ESPACOS.md }]}>
+              <TouchableOpacity
+                style={estilos.botaoCancelar}
+                onPress={() => { setModalExcluir(false); setSenhaExclusao(''); setMostrarSenhaExclusao(false) }}
+              >
+                <AppText style={estilos.botaoCancelarTexto}>Cancelar</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[estilos.botaoSalvar, { backgroundColor: CORES.erro }, carregando && { opacity: 0.6 }]}
+                onPress={confirmarExclusao}
+                disabled={carregando}
+              >
+                <AppText style={estilos.botaoSalvarTexto}>Confirmar</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   )
 }
@@ -428,6 +520,15 @@ const estilos = StyleSheet.create({
     borderRadius: 19,
     borderWidth: 2,
     borderColor: CORES.secundaria,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  botaoExcluirHeader: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: CORES.erro,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -582,4 +683,36 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
   },
   botaoSalvarTexto: { color: CORES.primaria, fontSize: FONTES.normal, fontWeight: '700' },
+
+  // Modal excluir conta
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: ESPACOS.lg,
+  },
+  modalCard: {
+    backgroundColor: CORES.branco,
+    borderRadius: 16,
+    padding: ESPACOS.lg,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalTitulo: {
+    fontSize: FONTES.subtitulo,
+    fontWeight: '700',
+    color: CORES.pretinho,
+    marginBottom: ESPACOS.sm,
+  },
+  modalDescricao: {
+    fontSize: FONTES.normal,
+    color: CORES.textoSecundario,
+    marginBottom: ESPACOS.md,
+    lineHeight: 20,
+  },
 })

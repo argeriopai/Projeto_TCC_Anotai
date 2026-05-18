@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth'
+import { auth } from '../services/firebase'
 import { api } from '../services/api'
+
+// ─── Interfaces (idênticas — nenhuma tela quebra) ──────────────────────────────
 
 interface Proprietario {
   id: string
@@ -25,85 +34,108 @@ interface AuthContextData {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData)
 
-const TOKEN_KEY = '@anotai:token'
-const USER_KEY  = '@anotai:usuario'
+// ─── Chaves AsyncStorage por usuário ──────────────────────────────────────────
+
 const fotoKey   = (id: string) => `@anotai:foto_perfil:${id}`
 const perfilKey = (id: string) => `@anotai:perfil:${id}`
+
+// ─── Helper: monta Proprietario a partir do uid + AsyncStorage ────────────────
+
+async function montarProprietario(uid: string, email: string): Promise<Proprietario> {
+  let dados: Proprietario = {
+    id: uid,
+    nome: email.split('@')[0],
+    apelido: null,
+    email,
+  }
+  try {
+    const perfilSalvo = await AsyncStorage.getItem(perfilKey(uid))
+    if (perfilSalvo) {
+      const d = JSON.parse(perfilSalvo)
+      dados = { ...dados, ...d }
+    }
+  } catch { /* ignora */ }
+  try {
+    const fotoSalva = await AsyncStorage.getItem(fotoKey(uid))
+    if (fotoSalva) dados.fotoPerfil = fotoSalva
+  } catch { /* ignora */ }
+  return dados
+}
+
+// ─── Bridge mock: formata token compatível com getPid() do api.ts ─────────────
+
+function setMockHeader(uid: string) {
+  api.defaults.headers.common['Authorization'] = `Bearer mock-token-${uid}-${Date.now()}`
+}
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [proprietario, setProprietario] = useState<Proprietario | null>(null)
   const [token, setToken]               = useState<string | null>(null)
   const [carregando, setCarregando]     = useState(true)
 
+  // Restaura sessão automaticamente via Firebase onAuthStateChanged
   useEffect(() => {
-    async function restaurarSessao() {
-      try {
-        const [tokenSalvo, usuarioSalvo] = await AsyncStorage.multiGet([TOKEN_KEY, USER_KEY])
-        const t = tokenSalvo[1]
-        const u = usuarioSalvo[1]
-        if (t && u) {
-          api.defaults.headers.common['Authorization'] = `Bearer ${t}`
-          setToken(t)
-          setProprietario(JSON.parse(u))
-        }
-      } catch {
-        // Sessão corrompida — ignora e permite acesso como visitante
-      } finally {
-        setCarregando(false)
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const t = await user.getIdToken()
+        setToken(t)
+        setMockHeader(user.uid)
+        const prop = await montarProprietario(user.uid, user.email ?? '')
+        setProprietario(prop)
+      } else {
+        api.defaults.headers.common['Authorization'] = ''
+        setToken(null)
+        setProprietario(null)
       }
-    }
-    restaurarSessao()
+      setCarregando(false)
+    })
+    return unsubscribe
   }, [])
 
   async function login(email: string, senha: string) {
-    const { data } = await api.post('/auth/login', { email, senha })
-    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
-    setToken(data.token)
-    setProprietario(data.proprietario)
-    await AsyncStorage.multiSet([
-      [TOKEN_KEY, data.token],
-      [USER_KEY,  JSON.stringify(data.proprietario)],
-    ])
-    try {
-      const fotoSalva = await AsyncStorage.getItem(fotoKey(data.proprietario.id))
-      if (fotoSalva) {
-        const comFoto = { ...data.proprietario, fotoPerfil: fotoSalva }
-        setProprietario(comFoto)
-        await AsyncStorage.setItem(USER_KEY, JSON.stringify(comFoto))
-      }
-    } catch { /* ignora */ }
-    try {
-      const perfilSalvo = await AsyncStorage.getItem(perfilKey(data.proprietario.id))
-      if (perfilSalvo) {
-        const dadosSalvos = JSON.parse(perfilSalvo)
-        const comPerfil = {
-          ...data.proprietario,
-          ...dadosSalvos,
-          fotoPerfil: (await AsyncStorage.getItem(fotoKey(data.proprietario.id))) ?? undefined,
-        }
-        setProprietario(comPerfil)
-        await AsyncStorage.setItem(USER_KEY, JSON.stringify(comPerfil))
-      }
-    } catch { /* ignora */ }
+    const cred = await signInWithEmailAndPassword(auth, email, senha)
+    const user = cred.user
+    const t = await user.getIdToken()
+    setToken(t)
+    setMockHeader(user.uid)
+    const prop = await montarProprietario(user.uid, user.email ?? email)
+    setProprietario(prop)
   }
 
   async function cadastrar(dados: { nome: string; email: string; senha: string; apelido?: string; telefone?: string }) {
-    await api.post('/auth/cadastro', dados)
-    await login(dados.email, dados.senha)
+    const cred = await createUserWithEmailAndPassword(auth, dados.email, dados.senha)
+    const user = cred.user
+    const perfilInicial = {
+      nome: dados.nome,
+      apelido: dados.apelido ?? dados.nome.split(' ')[0],
+      telefone: dados.telefone,
+    }
+    await AsyncStorage.setItem(perfilKey(user.uid), JSON.stringify(perfilInicial))
+    const t = await user.getIdToken()
+    setToken(t)
+    setMockHeader(user.uid)
+    setProprietario({
+      id: user.uid,
+      nome: dados.nome,
+      apelido: dados.apelido ?? dados.nome.split(' ')[0],
+      email: user.email ?? dados.email,
+      telefone: dados.telefone,
+    })
   }
 
   async function logout() {
-    api.defaults.headers.common['Authorization'] = ''
     setToken(null)
     setProprietario(null)
-    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY])
+    api.defaults.headers.common['Authorization'] = ''
+    await signOut(auth)
   }
 
   async function atualizarPerfil(dados: Partial<Pick<Proprietario, 'nome' | 'apelido' | 'telefone'>>) {
     if (!proprietario) return
     const atualizado = { ...proprietario, ...dados }
     setProprietario(atualizado)
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(atualizado))
     await AsyncStorage.setItem(
       perfilKey(proprietario.id),
       JSON.stringify({ nome: dados.nome, apelido: dados.apelido, telefone: dados.telefone })
@@ -114,7 +146,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!proprietario) return
     const atualizado: Proprietario = { ...proprietario, fotoPerfil: uri ?? undefined }
     setProprietario(atualizado)
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(atualizado))
     if (uri) {
       await AsyncStorage.setItem(fotoKey(proprietario.id), uri)
     } else {

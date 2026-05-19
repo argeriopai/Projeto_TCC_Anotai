@@ -68,8 +68,8 @@ export function FotosPicker({ fotos, onFotosChange, desabilitado, onBloqueado }:
     }
 
     const res = origem === 'camera'
-      ? await ImagePicker.launchCameraAsync({ quality: 0.5, allowsEditing: true, aspect: [4, 3] })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, allowsEditing: true, aspect: [4, 3] })
+      ? await ImagePicker.launchCameraAsync({ quality: 0.5, allowsEditing: false })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, allowsEditing: false })
 
     if (res.canceled || !res.assets?.[0]?.uri) return
 

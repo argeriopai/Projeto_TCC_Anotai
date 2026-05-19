@@ -193,8 +193,8 @@ export function TelaRelatorio({ navigation }: Props) {
     : 'Todos os veículos'
 
   const abas: { key: Aba; label: string }[] = [
-    { key: 'juntos',    label: 'Juntos'    },
-    { key: 'separados', label: 'Separados' },
+    { key: 'juntos',    label: 'Despesa Total'    },
+    { key: 'separados', label: 'Despesa Unitária' },
   ]
 
   return (

@@ -243,6 +243,15 @@ export function TelaPecas({ navigation }: Props) {
                 )}
               </View>
 
+              {/* Garantia */}
+              {!!(item as any).garantia && (
+                <View style={estilos.cardMetaRow}>
+                  <AppText style={estilos.cardMeta}>
+                    {`Garantia: ${(item as any).garantia}`}
+                  </AppText>
+                </View>
+              )}
+
               {/* Total */}
               {item.custo !== undefined && (
                 <AppText style={estilos.cardValor}>

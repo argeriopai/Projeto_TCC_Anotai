@@ -240,15 +240,18 @@ storageBucket: "anotai-145e1.firebasestorage.app"
 messagingSenderId: "143171299379"
 appId: "1:143171299379:web:6c191fb0e6a4e536665b46"
 
-## Sprint 11 — Geração do APK final
-
-### Próximos passos:
-1. Testar todas as funcionalidades com Firebase (carro, moto, serviço, peça, revisão, relatório)
-2. Gerar APK: `eas build --platform android --profile preview`
-3. Distribuir para testadores
-
-### Feedbacks dos testadores a implementar:
-- (listar aqui os feedbacks recebidos quando retomar)
+## Sprint 11 — CONCLUÍDO ✅
+- Guard veículo ativo em todas as telas de dados
+- Excluir conta com reautenticação por senha
+- limparUndefined no Firestore (campos opcionais funcionando)
+- Membro desde preenchido com data real do Firebase
+- Alterar senha funcional com reautenticação
+- Scroll com teclado e avanço de campos
+- Crop de imagem removido (captura imagem inteira)
+- Relatório: "Juntos" → "Despesa Total", "Separado" → "Despesa Unitária"
+- Campo Garantia (número + Meses/Anos) em Serviços e Peças
+- Garantia exibida no card de consulta de Peças
+- Exclusão de conta padronizada com ícone no header
 
 ### Comando para recuperar contexto:
 "Leia o CLAUDE.md e retome o desenvolvimento"

@@ -1,28 +1,20 @@
 import React, { useState } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, KeyboardAvoidingView, Platform, Image,
+  ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Modal,
 } from 'react-native'
 import { AppText } from '../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '../contexts/AuthContext'
-import { AvatarCircular } from '../components/AvatarCircular'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { mascaraTelefone } from '../utils/mascaras'
+import { auth } from '../services/firebase'
 
 interface Props { navigation: any }
 
-function extrairDataCadastro(id: string): string {
-  const ts = parseInt(id.split('-')[0])
-  if (!isNaN(ts) && ts > 1_000_000_000_000) {
-    return new Date(ts).toLocaleDateString('pt-BR')
-  }
-  return '—'
-}
-
-// ── Campos reutilizáveis ──────────────────────────────────────────────────────
+// ── Campo reutilizável ────────────────────────────────────────────────────────
 
 interface CampoInfoProps {
   label: string
@@ -70,66 +62,26 @@ function CampoInfo({ label, icone, valor, editavel, onChange, keyboardType, auto
   )
 }
 
-interface CampoSenhaProps {
-  label: string
-  valor: string
-  onChange: (t: string) => void
-  mostrar: boolean
-  onToggle: () => void
-}
-
-function CampoSenha({ label, valor, onChange, mostrar, onToggle }: CampoSenhaProps) {
-  return (
-    <View style={estilos.campoRow}>
-      <View style={estilos.campoIcone}>
-        <Ionicons name="lock-closed-outline" size={17} color={CORES.secundaria} />
-      </View>
-      <View style={estilos.campoConteudo}>
-        <AppText style={estilos.campoLabel}>{label}</AppText>
-        <View style={estilos.senhaLinha}>
-          <TextInput
-            style={[estilos.campoInput, { flex: 1, marginBottom: 0 }]}
-            value={valor}
-            onChangeText={onChange}
-            secureTextEntry={!mostrar}
-            autoCapitalize="none"
-            autoCorrect={false}
-            blurOnSubmit={false}
-          />
-          <TouchableOpacity
-            onPress={onToggle}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={{ paddingLeft: ESPACOS.sm }}
-          >
-            <Ionicons name={mostrar ? 'eye-off-outline' : 'eye-outline'} size={18} color={CORES.cinzaTexto} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  )
-}
-
 // ── Tela principal ────────────────────────────────────────────────────────────
 
 export function TelaMeuPerfil({ navigation }: Props) {
-  const { proprietario, atualizarPerfil, atualizarFotoPerfil } = useAuth()
+  const { proprietario, atualizarPerfil, atualizarFotoPerfil, excluirConta } = useAuth()
 
   const [modoEditar, setModoEditar] = useState(false)
-  const [modoSenha,  setModoSenha]  = useState(false)
   const [carregando, setCarregando] = useState(false)
 
-  const [nome,     setNome]     = useState(proprietario?.nome     ?? '')
-  const [telefone, setTelefone] = useState(proprietario?.telefone ?? '')
-
+  const [nome,        setNome]        = useState(proprietario?.nome     ?? '')
+  const [telefone,    setTelefone]    = useState(proprietario?.telefone ?? '')
   const [telefoneErro, setTelefoneErro] = useState('')
 
-  const [senhaAtual,     setSenhaAtual]     = useState('')
-  const [novaSenha,      setNovaSenha]      = useState('')
-  const [confirmarSenha, setConfirmarSenha] = useState('')
-  const [mostrarSenhas,  setMostrarSenhas]  = useState(false)
+  const [modalExcluir,         setModalExcluir]         = useState(false)
+  const [senhaExclusao,        setSenhaExclusao]        = useState('')
+  const [mostrarSenhaExclusao, setMostrarSenhaExclusao] = useState(false)
 
-  const apelido      = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
-  const dataCadastro = proprietario?.id ? extrairDataCadastro(proprietario.id) : '—'
+  const creationTime = auth.currentUser?.metadata?.creationTime
+  const dataCadastro = creationTime
+    ? new Date(creationTime).toLocaleDateString('pt-BR')
+    : '—'
 
   async function capturarFoto(origem: 'camera' | 'galeria') {
     const perm = origem === 'camera'
@@ -140,8 +92,8 @@ export function TelaMeuPerfil({ navigation }: Props) {
       return
     }
     const res = origem === 'camera'
-      ? await ImagePicker.launchCameraAsync({ quality: 0.5, allowsEditing: true, aspect: [1, 1] })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, allowsEditing: true, aspect: [1, 1] })
+      ? await ImagePicker.launchCameraAsync({ quality: 0.5, allowsEditing: false })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5, allowsEditing: false })
     if (res.canceled || !res.assets?.[0]?.uri) return
     await atualizarFotoPerfil(res.assets[0].uri)
   }
@@ -174,14 +126,6 @@ export function TelaMeuPerfil({ navigation }: Props) {
     setModoEditar(false)
   }
 
-  function cancelarSenha() {
-    setSenhaAtual('')
-    setNovaSenha('')
-    setConfirmarSenha('')
-    setMostrarSenhas(false)
-    setModoSenha(false)
-  }
-
   async function salvarPerfil() {
     if (!nome.trim()) {
       Alert.alert('Atenção', 'O nome não pode estar vazio.')
@@ -205,12 +149,26 @@ export function TelaMeuPerfil({ navigation }: Props) {
     }
   }
 
-  function salvarSenha() {
-    Alert.alert(
-      '🔒 Funcionalidade em desenvolvimento',
-      'A alteração de senha estará disponível na versão completa do app, com servidor ativo.\n\nPor enquanto, utilize a senha cadastrada originalmente.',
-      [{ text: 'Entendi', onPress: cancelarSenha }]
-    )
+  async function confirmarExclusao() {
+    if (!senhaExclusao.trim()) {
+      Alert.alert('Atenção', 'Digite sua senha para confirmar.')
+      return
+    }
+    setCarregando(true)
+    try {
+      await excluirConta(senhaExclusao)
+      setModalExcluir(false)
+      setSenhaExclusao('')
+    } catch (e: any) {
+      Alert.alert(
+        'Erro',
+        e.message === 'Senha incorreta'
+          ? 'Senha incorreta. Verifique e tente novamente.'
+          : 'Não foi possível excluir a conta. Tente novamente.',
+      )
+    } finally {
+      setCarregando(false)
+    }
   }
 
   return (
@@ -220,7 +178,7 @@ export function TelaMeuPerfil({ navigation }: Props) {
       <View style={estilos.header}>
         <AppText style={estilos.headerTitulo}>Meu Perfil</AppText>
         <View style={estilos.headerDireita}>
-          {!modoEditar && !modoSenha && (
+          {!modoEditar && (
             <TouchableOpacity
               style={estilos.botaoEditar}
               onPress={() => setModoEditar(true)}
@@ -241,6 +199,16 @@ export function TelaMeuPerfil({ navigation }: Props) {
             accessibilityRole="button"
           >
             <Ionicons name="home" size={20} color={CORES.secundaria} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={estilos.botaoExcluirHeader}
+            onPress={() => setModalExcluir(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessible={true}
+            accessibilityLabel="Excluir minha conta"
+            accessibilityRole="button"
+          >
+            <Ionicons name="trash-outline" size={18} color={CORES.erro} />
           </TouchableOpacity>
         </View>
       </View>
@@ -321,11 +289,11 @@ export function TelaMeuPerfil({ navigation }: Props) {
             </View>
 
             {/* Botões — modo visualização */}
-            {!modoEditar && !modoSenha && (
+            {!modoEditar && (
               <View style={estilos.botoesSection}>
                 <TouchableOpacity
                   style={estilos.botaoPrimario}
-                  onPress={() => setModoSenha(true)}
+                  onPress={() => navigation.navigate('AlterarSenha')}
                   accessible={true}
                   accessibilityLabel="Alterar senha"
                   accessibilityRole="button"
@@ -353,46 +321,64 @@ export function TelaMeuPerfil({ navigation }: Props) {
             )}
           </View>
 
-          {/* CARD ALTERAR SENHA */}
-          {modoSenha && (
-            <View style={[estilos.card, { marginTop: ESPACOS.md }]}>
-              <View style={estilos.camposSection}>
-                <AppText style={estilos.sectionTitulo}>Alterar Senha</AppText>
-                <CampoSenha
-                  label="Senha atual"
-                  valor={senhaAtual}
-                  onChange={setSenhaAtual}
-                  mostrar={mostrarSenhas}
-                  onToggle={() => setMostrarSenhas(v => !v)}
-                />
-                <CampoSenha
-                  label="Nova senha"
-                  valor={novaSenha}
-                  onChange={setNovaSenha}
-                  mostrar={mostrarSenhas}
-                  onToggle={() => setMostrarSenhas(v => !v)}
-                />
-                <CampoSenha
-                  label="Confirmar nova senha"
-                  valor={confirmarSenha}
-                  onChange={setConfirmarSenha}
-                  mostrar={mostrarSenhas}
-                  onToggle={() => setMostrarSenhas(v => !v)}
-                />
-              </View>
-              <View style={estilos.botoesLinha}>
-                <TouchableOpacity style={estilos.botaoCancelar} onPress={cancelarSenha}>
-                  <AppText style={estilos.botaoCancelarTexto}>Cancelar</AppText>
-                </TouchableOpacity>
-                <TouchableOpacity style={estilos.botaoSalvar} onPress={salvarSenha}>
-                  <AppText style={estilos.botaoSalvarTexto}>Salvar Senha</AppText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* MODAL EXCLUIR CONTA */}
+      <Modal
+        visible={modalExcluir}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setModalExcluir(false); setSenhaExclusao('') }}
+      >
+        <View style={estilos.modalOverlay}>
+          <View style={estilos.modalCard}>
+            <AppText style={estilos.modalTitulo}>Confirmar exclusão</AppText>
+            <AppText style={estilos.modalDescricao}>
+              Todos os seus dados serão apagados permanentemente. Digite sua senha para confirmar.
+            </AppText>
+            <View style={estilos.senhaLinha}>
+              <TextInput
+                style={[estilos.campoInput, { flex: 1 }]}
+                value={senhaExclusao}
+                onChangeText={setSenhaExclusao}
+                secureTextEntry={!mostrarSenhaExclusao}
+                placeholder="Sua senha"
+                placeholderTextColor={CORES.cinzaTexto}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                onPress={() => setMostrarSenhaExclusao(v => !v)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ paddingLeft: ESPACOS.sm }}
+              >
+                <Ionicons
+                  name={mostrarSenhaExclusao ? 'eye-off-outline' : 'eye-outline'}
+                  size={18}
+                  color={CORES.cinzaTexto}
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={[estilos.botoesLinha, { marginTop: ESPACOS.md }]}>
+              <TouchableOpacity
+                style={estilos.botaoCancelar}
+                onPress={() => { setModalExcluir(false); setSenhaExclusao(''); setMostrarSenhaExclusao(false) }}
+              >
+                <AppText style={estilos.botaoCancelarTexto}>Cancelar</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[estilos.botaoSalvar, { backgroundColor: CORES.erro }, carregando && { opacity: 0.6 }]}
+                onPress={confirmarExclusao}
+                disabled={carregando}
+              >
+                <AppText style={estilos.botaoSalvarTexto}>Confirmar</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   )
 }
@@ -428,6 +414,15 @@ const estilos = StyleSheet.create({
     borderRadius: 19,
     borderWidth: 2,
     borderColor: CORES.secundaria,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  botaoExcluirHeader: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: CORES.erro,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -535,7 +530,7 @@ const estilos = StyleSheet.create({
     marginBottom: 0,
   },
 
-  // Campo senha
+  // Campo senha (modal)
   senhaLinha: { flexDirection: 'row', alignItems: 'center' },
 
   // Seção de botões
@@ -562,7 +557,7 @@ const estilos = StyleSheet.create({
   botaoSecundarioTexto: { color: CORES.primaria, fontSize: FONTES.normal, fontWeight: '700' },
 
   // Botões inline (Cancelar + Salvar)
-  botoesLinha:          { flexDirection: 'row', gap: ESPACOS.sm },
+  botoesLinha:      { flexDirection: 'row', gap: ESPACOS.sm },
   botaoCancelar: {
     flex: 1,
     borderWidth: 1.5,
@@ -582,4 +577,36 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
   },
   botaoSalvarTexto: { color: CORES.primaria, fontSize: FONTES.normal, fontWeight: '700' },
+
+  // Modal excluir conta
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: ESPACOS.lg,
+  },
+  modalCard: {
+    backgroundColor: CORES.branco,
+    borderRadius: 16,
+    padding: ESPACOS.lg,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalTitulo: {
+    fontSize: FONTES.subtitulo,
+    fontWeight: '700',
+    color: CORES.pretinho,
+    marginBottom: ESPACOS.sm,
+  },
+  modalDescricao: {
+    fontSize: FONTES.normal,
+    color: CORES.textoSecundario,
+    marginBottom: ESPACOS.md,
+    lineHeight: 20,
+  },
 })

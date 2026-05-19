@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  Modal, FlatList,
 } from 'react-native'
 import { AppText } from '../../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -27,6 +28,15 @@ function parseDateStr(dateStr: string): Date {
   return new Date(y, m - 1, d)
 }
 
+function parseGarantia(val: string | undefined): { numero: string; unidade: string } {
+  if (!val) return { numero: '', unidade: 'Meses' }
+  const parts = val.trim().split(' ')
+  const last = parts[parts.length - 1].toLowerCase()
+  if (last === 'anos' || last === 'ano') return { numero: parts.slice(0, -1).join(' '), unidade: 'Anos' }
+  if (last === 'meses' || last === 'mês' || last === 'mes') return { numero: parts.slice(0, -1).join(' '), unidade: 'Meses' }
+  return { numero: val, unidade: 'Meses' }
+}
+
 export function TelaRegistrarPeca({ navigation, route }: Props) {
   const edit: Peca | undefined = route.params?.registroParaEditar
   const { proprietario } = useAuth()
@@ -41,6 +51,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
   const telEstabRef       = useRef<TextInput>(null)
   const quantidadeRef     = useRef<TextInput>(null)
   const valorUnitRef      = useRef<TextInput>(null)
+  const garantiaRef       = useRef<TextInput>(null)
 
   // ── Campos do formulário ──────────────────────────────────────────────────
   const [nome,                    setNome]                    = useState(edit?.nome ?? '')
@@ -53,6 +64,9 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
   const [carregando,              setCarregando]              = useState(false)
   const [erros,                   setErros]                   = useState<Record<string, string>>({})
   const [telEstabValido, setTelEstabValido] = useState(false)
+  const [garantiaNumero,        setGarantiaNumero]        = useState(() => parseGarantia((edit as any)?.garantia).numero)
+  const [garantiaUnidade,       setGarantiaUnidade]       = useState(() => parseGarantia((edit as any)?.garantia).unidade)
+  const [garantiaUnidadeAberta, setGarantiaUnidadeAberta] = useState(false)
 
   const [veiculoId] = useState<string | null>(edit?.veiculoId ?? veiculoAtivo?.id ?? null)
 
@@ -97,9 +111,9 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
     if (edit) return true
     return !!nome.trim() || !!descricao.trim() ||
       !!estabelecimento.trim() || !!telefoneEstabelecimento ||
-      !!quantidade.trim() || !!valorUnitario
+      !!quantidade.trim() || !!valorUnitario || !!garantiaNumero.trim()
   }, [edit, nome, descricao, estabelecimento,
-      telefoneEstabelecimento, quantidade, valorUnitario])
+      telefoneEstabelecimento, quantidade, valorUnitario, garantiaNumero])
   const handleVoltar = useConfirmarSaida(navigation, temAlteracao)
 
   function limparErro(campo: string) {
@@ -137,7 +151,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
     requireAuth(async () => {
       if (!validar()) return
       setCarregando(true)
-      const payload = {
+      const payload: any = {
         veiculoId:               veiculoAtivo?.id ?? veiculoId!,
         nome:                    nome.trim(),
         descricao:               descricao.trim() || undefined,
@@ -147,6 +161,7 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
         custo:                   totalNum ?? undefined,
         estabelecimento:         estabelecimento.trim() || undefined,
         telefoneEstabelecimento: telefoneEstabelecimento.trim() || undefined,
+        garantia:                garantiaNumero.trim() ? `${garantiaNumero.trim()} ${garantiaUnidade}` : undefined,
       }
       try {
         if (edit) {
@@ -352,6 +367,55 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
             <AppText style={estilos.hintLeitura}>Calculado automaticamente: Quantidade × Valor unit.</AppText>
           </View>
 
+          {/* ── Garantia ─────────────────────────────────────────────── */}
+          <View style={estilos.campo}>
+            <AppText style={estilos.label}>Garantia</AppText>
+            <View style={estilos.linha}>
+              <TextInput
+                ref={garantiaRef}
+                style={[estilos.input, { flex: 1, marginRight: ESPACOS.sm }]}
+                value={garantiaNumero}
+                onChangeText={v => setGarantiaNumero(v.replace(/\D/g, ''))}
+                placeholder="Ex: 6"
+                placeholderTextColor={CORES.placeholder}
+                keyboardType="numeric"
+                maxLength={3}
+                returnKeyType="done"
+                blurOnSubmit={true}
+              />
+              <TouchableOpacity
+                style={[estilos.dropdownBtn, { flex: 1 }]}
+                onPress={() => setGarantiaUnidadeAberta(true)}
+                activeOpacity={0.7}
+              >
+                <AppText style={estilos.dropdownTexto}>{garantiaUnidade}</AppText>
+                <Ionicons name="chevron-down" size={18} color={CORES.cinzaTexto} />
+              </TouchableOpacity>
+              <Modal visible={garantiaUnidadeAberta} transparent animationType="fade" onRequestClose={() => setGarantiaUnidadeAberta(false)}>
+                <TouchableOpacity style={estilos.overlay} activeOpacity={1} onPress={() => setGarantiaUnidadeAberta(false)}>
+                  <View style={estilos.modalBox}>
+                    <AppText style={estilos.modalTitulo}>Unidade</AppText>
+                    <FlatList
+                      data={['Meses', 'Anos']}
+                      keyExtractor={item => item}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={[estilos.opcaoItem, garantiaUnidade === item && estilos.opcaoAtiva]}
+                          onPress={() => { setGarantiaUnidade(item); setGarantiaUnidadeAberta(false) }}
+                        >
+                          <AppText style={[estilos.opcaoTexto, garantiaUnidade === item && estilos.opcaoTextoAtivo]}>
+                            {item}
+                          </AppText>
+                          {garantiaUnidade === item && <Ionicons name="checkmark" size={18} color={CORES.secundaria} />}
+                        </TouchableOpacity>
+                      )}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+            </View>
+          </View>
+
           {/* ── Fotos ─────────────────────────────────────────────────── */}
           <FotosPicker
             fotos={fotos}
@@ -482,6 +546,50 @@ const estilos = StyleSheet.create({
     marginBottom: ESPACOS.xs,
   },
   avisoTexto:    { fontSize: FONTES.pequena, color: CORES.texto, flex: 1 },
+  dropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: CORES.branco,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: CORES.borda,
+    paddingHorizontal: ESPACOS.md,
+    height: 50,
+  },
+  dropdownTexto: { fontSize: FONTES.normal, color: CORES.texto, flex: 1 },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: ESPACOS.md,
+  },
+  modalBox: {
+    backgroundColor: CORES.branco,
+    borderRadius: 16,
+    maxHeight: 400,
+    paddingVertical: ESPACOS.sm,
+  },
+  modalTitulo: {
+    fontSize: FONTES.normal,
+    fontWeight: '700',
+    color: CORES.primaria,
+    padding: ESPACOS.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  opcaoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: ESPACOS.md,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  opcaoAtiva:      { backgroundColor: '#E8FAF0' },
+  opcaoTexto:      { fontSize: FONTES.normal, color: CORES.texto, flex: 1 },
+  opcaoTextoAtivo: { color: CORES.primaria, fontWeight: '600' },
   botao: {
     backgroundColor: CORES.secundaria,
     borderRadius: 20,

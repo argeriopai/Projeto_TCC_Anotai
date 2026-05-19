@@ -87,7 +87,7 @@ export function TelaVeiculos({ navigation }: Props) {
             text: 'Excluir', style: 'destructive',
             onPress: async () => {
               try {
-                await excluirVeiculoApi(cardSelecionado)
+                await excluirVeiculoApi(cardSelecionado, abaAtiva)
                 if (veiculoAtivo?.id === cardSelecionado) {
                   await definirVeiculoAtivo(null)
                 }

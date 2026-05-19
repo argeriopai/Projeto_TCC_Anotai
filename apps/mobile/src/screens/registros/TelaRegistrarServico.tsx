@@ -28,6 +28,15 @@ function parseDateStr(dateStr: string): Date {
   return new Date(y, m - 1, d)
 }
 
+function parseGarantia(val: string | undefined): { numero: string; unidade: string } {
+  if (!val) return { numero: '', unidade: 'Meses' }
+  const parts = val.trim().split(' ')
+  const last = parts[parts.length - 1].toLowerCase()
+  if (last === 'anos' || last === 'ano') return { numero: parts.slice(0, -1).join(' '), unidade: 'Anos' }
+  if (last === 'meses' || last === 'mês' || last === 'mes') return { numero: parts.slice(0, -1).join(' '), unidade: 'Meses' }
+  return { numero: val, unidade: 'Meses' }
+}
+
 interface DropdownProps {
   label: string
   obrigatorio?: boolean
@@ -119,7 +128,9 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
   const [telefoneEstabelecimento, setTelefoneEstabelecimento] = useState(edit?.telefoneEstabelecimento ?? '')
   const [profissional,            setProfissional]            = useState(edit?.profissional ?? '')
   const [telefoneProfissional,    setTelefoneProfissional]    = useState(edit?.telefoneProfissional ?? '')
-  const [garantia,                setGarantia]                = useState(edit?.garantia ?? '')
+  const [garantiaNumero,          setGarantiaNumero]          = useState(() => parseGarantia(edit?.garantia).numero)
+  const [garantiaUnidade,         setGarantiaUnidade]         = useState(() => parseGarantia(edit?.garantia).unidade)
+  const [garantiaUnidadeAberta,   setGarantiaUnidadeAberta]   = useState(false)
   const [kilometragem,            setKilometragem]            = useState(edit?.kilometragem ?? '')
   const [carregando,              setCarregando]              = useState(false)
   const [erros,                   setErros]                   = useState<Record<string, string>>({})
@@ -166,10 +177,10 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
     return !!tipo.trim() || !!descricao.trim() || !!custo ||
       !!estabelecimento.trim() || !!telefoneEstabelecimento ||
       !!profissional.trim() || !!telefoneProfissional ||
-      !!garantia.trim() || !!kilometragem.trim()
+      !!garantiaNumero.trim() || !!kilometragem.trim()
   }, [edit, tipo, descricao, custo, estabelecimento,
       telefoneEstabelecimento, profissional,
-      telefoneProfissional, garantia, kilometragem])
+      telefoneProfissional, garantiaNumero, kilometragem])
   const handleVoltar = useConfirmarSaida(navigation, temAlteracao)
 
   function limparErro(campo: string) {
@@ -232,7 +243,7 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
         telefoneEstabelecimento: telefoneEstabelecimento.trim() || undefined,
         profissional:            profissional.trim()            || undefined,
         telefoneProfissional:    telefoneProfissional.trim()    || undefined,
-        garantia:                garantia.trim()                || undefined,
+        garantia:                garantiaNumero.trim() ? `${garantiaNumero.trim()} ${garantiaUnidade}` : undefined,
         kilometragem:            kilometragem.trim()            || undefined,
       }
       try {
@@ -453,39 +464,69 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
             {!!erros.telefoneProfissional && <AppText style={estilos.textoErro}>{erros.telefoneProfissional}</AppText>}
           </View>
 
-          <View style={estilos.linha}>
-            <View style={[estilos.campo, { flex: 1, marginRight: ESPACOS.sm }]}>
-              <AppText style={estilos.label}>Garantia</AppText>
+          <View style={estilos.campo}>
+            <AppText style={estilos.label}>Garantia</AppText>
+            <View style={estilos.linha}>
               <TextInput
                 ref={garantiaRef}
-                style={estilos.input}
-                value={garantia}
-                onChangeText={setGarantia}
-                placeholder="Ex: 6 meses"
+                style={[estilos.input, { flex: 1, marginRight: ESPACOS.sm }]}
+                value={garantiaNumero}
+                onChangeText={v => setGarantiaNumero(v.replace(/\D/g, ''))}
+                placeholder="Ex: 6"
                 placeholderTextColor={CORES.placeholder}
-                autoCapitalize="sentences"
-                autoCorrect={false}
-                maxLength={30}
+                keyboardType="numeric"
+                maxLength={3}
                 returnKeyType="next"
                 blurOnSubmit={false}
                 onSubmitEditing={() => kilometragemRef.current?.focus()}
               />
+              <TouchableOpacity
+                style={[estilos.dropdownBtn, { flex: 1 }]}
+                onPress={() => setGarantiaUnidadeAberta(true)}
+                activeOpacity={0.7}
+              >
+                <AppText style={estilos.dropdownTexto}>{garantiaUnidade}</AppText>
+                <Ionicons name="chevron-down" size={18} color={CORES.cinzaTexto} />
+              </TouchableOpacity>
+              <Modal visible={garantiaUnidadeAberta} transparent animationType="fade" onRequestClose={() => setGarantiaUnidadeAberta(false)}>
+                <TouchableOpacity style={estilos.overlay} activeOpacity={1} onPress={() => setGarantiaUnidadeAberta(false)}>
+                  <View style={estilos.modalBox}>
+                    <AppText style={estilos.modalTitulo}>Unidade</AppText>
+                    <FlatList
+                      data={['Meses', 'Anos']}
+                      keyExtractor={item => item}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={[estilos.opcaoItem, garantiaUnidade === item && estilos.opcaoAtiva]}
+                          onPress={() => { setGarantiaUnidade(item); setGarantiaUnidadeAberta(false) }}
+                        >
+                          <AppText style={[estilos.opcaoTexto, garantiaUnidade === item && estilos.opcaoTextoAtivo]}>
+                            {item}
+                          </AppText>
+                          {garantiaUnidade === item && <Ionicons name="checkmark" size={18} color={CORES.secundaria} />}
+                        </TouchableOpacity>
+                      )}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </Modal>
             </View>
-            <View style={[estilos.campo, { flex: 1 }]}>
-              <AppText style={estilos.label}>Kilometragem</AppText>
-              <TextInput
-                ref={kilometragemRef}
-                style={estilos.input}
-                value={kilometragem}
-                onChangeText={setKilometragem}
-                placeholder="Ex: 45000"
-                placeholderTextColor={CORES.placeholder}
-                keyboardType="numeric"
-                maxLength={7}
-                returnKeyType="done"
-                blurOnSubmit={true}
-              />
-            </View>
+          </View>
+
+          <View style={estilos.campo}>
+            <AppText style={estilos.label}>Kilometragem</AppText>
+            <TextInput
+              ref={kilometragemRef}
+              style={estilos.input}
+              value={kilometragem}
+              onChangeText={setKilometragem}
+              placeholder="Ex: 45000"
+              placeholderTextColor={CORES.placeholder}
+              keyboardType="numeric"
+              maxLength={7}
+              returnKeyType="done"
+              blurOnSubmit={true}
+            />
           </View>
 
           <FotosPicker

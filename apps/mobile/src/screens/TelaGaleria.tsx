@@ -235,7 +235,13 @@ export function TelaGaleria({ navigation }: Props) {
       </View>
 
       {/* CONTEÚDO */}
-      {carregando ? (
+      {!veiculoAtivo ? (
+        <View style={es.centralizador}>
+          <Ionicons name="car-outline" size={56} color={CORES.cinzaTexto} />
+          <AppText style={es.semDadosTitulo}>Ative um veículo para ver as fotos</AppText>
+          <AppText style={es.semDadosSub}>Vá em Início e toque no seu veículo para ativá-lo</AppText>
+        </View>
+      ) : carregando ? (
         <View style={es.centralizador}>
           <ActivityIndicator size="large" color={CORES.secundaria} />
         </View>
@@ -244,11 +250,6 @@ export function TelaGaleria({ navigation }: Props) {
           <Ionicons name="images-outline" size={64} color={CORES.cinzaTexto} />
           <AppText style={es.semDadosTitulo}>Nenhuma foto encontrada</AppText>
           <AppText style={es.semDadosSub}>Adicione fotos ao registrar serviços e peças</AppText>
-          {!veiculoAtivo && (
-            <AppText style={{ textAlign: 'center', color: '#666', marginTop: 16, fontSize: 13 }}>
-              Ative um veículo na página inicial para ver suas fotos.
-            </AppText>
-          )}
         </View>
       ) : (
         <ScrollView style={es.scroll} contentContainerStyle={es.scrollConteudo} showsVerticalScrollIndicator={false}>

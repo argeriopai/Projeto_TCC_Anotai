@@ -28,7 +28,8 @@ apps/mobile/
 - Sprint 6: Isolamento de dados no logout e no mock (getPid)
 - Sprint 7: Guard visitante, recuperação de sessão, sync lembretes ↔ registro
 - Sprint 8: Modal boas-vindas visitante, Esqueci minha senha, máscara de placa, maxLength campos, auto-limpeza notificações vencidas, campo livre "Outro", bloqueio placa duplicada
-- Sprint 9: Galeria filtrada por veículo ativo, chips → CampoDropdown, antecedência configurável, isolamento por usuário/veículo, ícone sino ativo/inativo, veículo no card de notificação
+- Sprint 9: Galeria filtrada por veículo ativo, chips → CampoDropdown, antecedência configurável, isolamento por usuário/veículo, ícone sino ativo/inativo, veículo no card, card veículo com marca/modelo, foto e perfil persistem após logout/login, tipos de serviço/revisão em arquivo compartilhado
+- Sprint 10: Firebase Auth + Firestore integrados, mock removido, dados persistem na nuvem, node_modules removido do git
 
 ## Sprint 3 — CONCLUÍDO
 - 5 telas de consulta ✅
@@ -213,19 +214,44 @@ apps/mobile/
 ## Repositório
 github.com/argeriopai/Projeto_TCC_Anotai
 
-## Próximas tarefas — Sprint 10
+## Sprint 10 — Integração Firebase — CONCLUÍDO ✅
 
-### Formulário de avaliação do app (pesquisa de usabilidade)
-- Criar segundo Google Forms com máximo 5 perguntas
-- Objetivo: validar usabilidade do app com testadores
-- Compor documentação do TCC
+### Sprint 9 — itens adicionais concluídos ✅
+- TelaHome: card de veículo exibe `Marca Modelo` (principal) e `Placa` (secundária)
+- TelaRegistrarServico: listas TIPOS_VEICULO_CARRO (27 itens) e TIPOS_VEICULO_MOTO (13 itens) extraídas para `src/constants/tiposServico.ts`
+- TelaRegistrarNotificacao: label "Tipo de revisão", diasAntes restaurado de content.data na edição
+- AuthContext: foto de perfil isolada por userId (`@anotai:foto_perfil:<id>`), persiste após logout/login
+- AuthContext: nome/telefone editados persistem após logout/login via `@anotai:perfil:<id>`
 
-### Feedbacks dos testadores a implementar
-- (listar aqui os feedbacks recebidos quando retomar)
+### Firebase — concluído ✅
+- `firebase.ts` criado (initializeApp, auth, db)
+- `AuthContext` migrado para Firebase Auth (signIn, createUser, signOut, onAuthStateChanged)
+- `firestoreService.ts` criado com 26 funções (carros, motos, serviços, peças, notificações)
+- `api.ts` mock removido (448 → 140 linhas) → redireciona para Firestore
+- Dados persistem na nuvem entre sessões e dispositivos
+- `node_modules` removido do rastreamento git (.gitignore corrigido)
+- Commits: ae9a39d2 (Firebase), e6b5d2ab (gitignore)
 
-### Missão: atingir 150 respostas no formulário inicial
-- Link: https://forms.gle/BSM28Z4uZrU4qE899
-- Atual: ~39 respostas — precisam de mais 111
+### firebaseConfig:
+apiKey: "AIzaSyAWxjgS3U-2_CSUcBLwi9jbJmPX6OnW0Jo"
+authDomain: "anotai-145e1.firebaseapp.com"
+projectId: "anotai-145e1"
+storageBucket: "anotai-145e1.firebasestorage.app"
+messagingSenderId: "143171299379"
+appId: "1:143171299379:web:6c191fb0e6a4e536665b46"
 
-### Comando para recuperar contexto no próximo chat:
+## Sprint 11 — CONCLUÍDO ✅
+- Guard veículo ativo em todas as telas de dados
+- Excluir conta com reautenticação por senha
+- limparUndefined no Firestore (campos opcionais funcionando)
+- Membro desde preenchido com data real do Firebase
+- Alterar senha funcional com reautenticação
+- Scroll com teclado e avanço de campos
+- Crop de imagem removido (captura imagem inteira)
+- Relatório: "Juntos" → "Despesa Total", "Separado" → "Despesa Unitária"
+- Campo Garantia (número + Meses/Anos) em Serviços e Peças
+- Garantia exibida no card de consulta de Peças
+- Exclusão de conta padronizada com ícone no header
+
+### Comando para recuperar contexto:
 "Leia o CLAUDE.md e retome o desenvolvimento"

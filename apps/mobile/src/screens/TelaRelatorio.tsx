@@ -156,10 +156,10 @@ export function TelaRelatorio({ navigation }: Props) {
 
   const servicosFiltrados = veiculoAtivoId
     ? servicos.filter(s => s.veiculoId === veiculoAtivoId)
-    : []
+    : servicos
   const pecasFiltradas = veiculoAtivoId
     ? pecas.filter(p => p.veiculoId === veiculoAtivoId)
-    : []
+    : pecas
 
   const totalServicos = servicosFiltrados.reduce((acc, s) => acc + (s.custo ?? 0), 0)
   const totalPecas    = pecasFiltradas.reduce((acc, p) => acc + valorPeca(p), 0)
@@ -190,11 +190,11 @@ export function TelaRelatorio({ navigation }: Props) {
 
   const nomeVeiculo = veiculoAtivo
     ? `${veiculoAtivo.marca} ${veiculoAtivo.modelo} — ${veiculoAtivo.placa}`
-    : ''
+    : 'Todos os veículos'
 
   const abas: { key: Aba; label: string }[] = [
-    { key: 'juntos',    label: 'Juntos'    },
-    { key: 'separados', label: 'Separados' },
+    { key: 'juntos',    label: 'Despesa Total'    },
+    { key: 'separados', label: 'Despesa Unitária' },
   ]
 
   return (
@@ -222,16 +222,15 @@ export function TelaRelatorio({ navigation }: Props) {
       </View>
       <View style={es.divisoria} />
 
-      {carregando ? (
-        <View style={es.centralizador}>
-          <ActivityIndicator size="large" color={CORES.secundaria} />
-        </View>
-      ) : !veiculoAtivoId ? (
+      {!veiculoAtivoId ? (
         <View style={es.centralizador}>
           <Ionicons name="car-outline" size={56} color={CORES.cinzaTexto} />
-          <AppText style={es.semVeiculoTexto}>
-            Nenhum veículo ativo. Ative um veículo na página inicial para ver o relatório.
-          </AppText>
+          <AppText style={es.semVeiculoTitulo}>Ative um veículo para ver o relatório de despesas</AppText>
+          <AppText style={es.semVeiculoTexto}>Vá em Início e toque no seu veículo para ativá-lo</AppText>
+        </View>
+      ) : carregando ? (
+        <View style={es.centralizador}>
+          <ActivityIndicator size="large" color={CORES.secundaria} />
         </View>
       ) : (
         <ScrollView
@@ -381,11 +380,17 @@ const es = StyleSheet.create({
     padding: ESPACOS.xl,
     gap: ESPACOS.md,
   },
+  semVeiculoTitulo: {
+    fontSize: FONTES.media,
+    fontWeight: '700',
+    color: CORES.pretinho,
+    textAlign: 'center',
+  },
   semVeiculoTexto: {
-    fontSize: FONTES.normal,
+    fontSize: FONTES.pequena,
     color: CORES.textoSecundario,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 18,
   },
 
   scroll:         { flex: 1, backgroundColor: CORES.cinzaClaro },

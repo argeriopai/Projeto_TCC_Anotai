@@ -8,21 +8,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '../contexts/AuthContext'
-import { AvatarCircular } from '../components/AvatarCircular'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { mascaraTelefone } from '../utils/mascaras'
+import { auth } from '../services/firebase'
 
 interface Props { navigation: any }
 
-function extrairDataCadastro(id: string): string {
-  const ts = parseInt(id.split('-')[0])
-  if (!isNaN(ts) && ts > 1_000_000_000_000) {
-    return new Date(ts).toLocaleDateString('pt-BR')
-  }
-  return '—'
-}
-
-// ── Campos reutilizáveis ──────────────────────────────────────────────────────
+// ── Campo reutilizável ────────────────────────────────────────────────────────
 
 interface CampoInfoProps {
   label: string
@@ -70,70 +62,26 @@ function CampoInfo({ label, icone, valor, editavel, onChange, keyboardType, auto
   )
 }
 
-interface CampoSenhaProps {
-  label: string
-  valor: string
-  onChange: (t: string) => void
-  mostrar: boolean
-  onToggle: () => void
-}
-
-function CampoSenha({ label, valor, onChange, mostrar, onToggle }: CampoSenhaProps) {
-  return (
-    <View style={estilos.campoRow}>
-      <View style={estilos.campoIcone}>
-        <Ionicons name="lock-closed-outline" size={17} color={CORES.secundaria} />
-      </View>
-      <View style={estilos.campoConteudo}>
-        <AppText style={estilos.campoLabel}>{label}</AppText>
-        <View style={estilos.senhaLinha}>
-          <TextInput
-            style={[estilos.campoInput, { flex: 1, marginBottom: 0 }]}
-            value={valor}
-            onChangeText={onChange}
-            secureTextEntry={!mostrar}
-            autoCapitalize="none"
-            autoCorrect={false}
-            blurOnSubmit={false}
-          />
-          <TouchableOpacity
-            onPress={onToggle}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={{ paddingLeft: ESPACOS.sm }}
-          >
-            <Ionicons name={mostrar ? 'eye-off-outline' : 'eye-outline'} size={18} color={CORES.cinzaTexto} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  )
-}
-
 // ── Tela principal ────────────────────────────────────────────────────────────
 
 export function TelaMeuPerfil({ navigation }: Props) {
   const { proprietario, atualizarPerfil, atualizarFotoPerfil, excluirConta } = useAuth()
 
   const [modoEditar, setModoEditar] = useState(false)
-  const [modoSenha,  setModoSenha]  = useState(false)
   const [carregando, setCarregando] = useState(false)
 
-  const [nome,     setNome]     = useState(proprietario?.nome     ?? '')
-  const [telefone, setTelefone] = useState(proprietario?.telefone ?? '')
-
+  const [nome,        setNome]        = useState(proprietario?.nome     ?? '')
+  const [telefone,    setTelefone]    = useState(proprietario?.telefone ?? '')
   const [telefoneErro, setTelefoneErro] = useState('')
 
-  const [senhaAtual,     setSenhaAtual]     = useState('')
-  const [novaSenha,      setNovaSenha]      = useState('')
-  const [confirmarSenha, setConfirmarSenha] = useState('')
-  const [mostrarSenhas,  setMostrarSenhas]  = useState(false)
-
-  const [modalExcluir,       setModalExcluir]       = useState(false)
-  const [senhaExclusao,      setSenhaExclusao]      = useState('')
+  const [modalExcluir,         setModalExcluir]         = useState(false)
+  const [senhaExclusao,        setSenhaExclusao]        = useState('')
   const [mostrarSenhaExclusao, setMostrarSenhaExclusao] = useState(false)
 
-  const apelido      = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? 'Usuário'
-  const dataCadastro = proprietario?.id ? extrairDataCadastro(proprietario.id) : '—'
+  const creationTime = auth.currentUser?.metadata?.creationTime
+  const dataCadastro = creationTime
+    ? new Date(creationTime).toLocaleDateString('pt-BR')
+    : '—'
 
   async function capturarFoto(origem: 'camera' | 'galeria') {
     const perm = origem === 'camera'
@@ -178,14 +126,6 @@ export function TelaMeuPerfil({ navigation }: Props) {
     setModoEditar(false)
   }
 
-  function cancelarSenha() {
-    setSenhaAtual('')
-    setNovaSenha('')
-    setConfirmarSenha('')
-    setMostrarSenhas(false)
-    setModoSenha(false)
-  }
-
   async function salvarPerfil() {
     if (!nome.trim()) {
       Alert.alert('Atenção', 'O nome não pode estar vazio.')
@@ -207,14 +147,6 @@ export function TelaMeuPerfil({ navigation }: Props) {
     } finally {
       setCarregando(false)
     }
-  }
-
-  function salvarSenha() {
-    Alert.alert(
-      '🔒 Funcionalidade em desenvolvimento',
-      'A alteração de senha estará disponível na versão completa do app, com servidor ativo.\n\nPor enquanto, utilize a senha cadastrada originalmente.',
-      [{ text: 'Entendi', onPress: cancelarSenha }]
-    )
   }
 
   async function confirmarExclusao() {
@@ -246,7 +178,7 @@ export function TelaMeuPerfil({ navigation }: Props) {
       <View style={estilos.header}>
         <AppText style={estilos.headerTitulo}>Meu Perfil</AppText>
         <View style={estilos.headerDireita}>
-          {!modoEditar && !modoSenha && (
+          {!modoEditar && (
             <TouchableOpacity
               style={estilos.botaoEditar}
               onPress={() => setModoEditar(true)}
@@ -357,11 +289,11 @@ export function TelaMeuPerfil({ navigation }: Props) {
             </View>
 
             {/* Botões — modo visualização */}
-            {!modoEditar && !modoSenha && (
+            {!modoEditar && (
               <View style={estilos.botoesSection}>
                 <TouchableOpacity
                   style={estilos.botaoPrimario}
-                  onPress={() => setModoSenha(true)}
+                  onPress={() => navigation.navigate('AlterarSenha')}
                   accessible={true}
                   accessibilityLabel="Alterar senha"
                   accessibilityRole="button"
@@ -388,44 +320,6 @@ export function TelaMeuPerfil({ navigation }: Props) {
               </View>
             )}
           </View>
-
-          {/* CARD ALTERAR SENHA */}
-          {modoSenha && (
-            <View style={[estilos.card, { marginTop: ESPACOS.md }]}>
-              <View style={estilos.camposSection}>
-                <AppText style={estilos.sectionTitulo}>Alterar Senha</AppText>
-                <CampoSenha
-                  label="Senha atual"
-                  valor={senhaAtual}
-                  onChange={setSenhaAtual}
-                  mostrar={mostrarSenhas}
-                  onToggle={() => setMostrarSenhas(v => !v)}
-                />
-                <CampoSenha
-                  label="Nova senha"
-                  valor={novaSenha}
-                  onChange={setNovaSenha}
-                  mostrar={mostrarSenhas}
-                  onToggle={() => setMostrarSenhas(v => !v)}
-                />
-                <CampoSenha
-                  label="Confirmar nova senha"
-                  valor={confirmarSenha}
-                  onChange={setConfirmarSenha}
-                  mostrar={mostrarSenhas}
-                  onToggle={() => setMostrarSenhas(v => !v)}
-                />
-              </View>
-              <View style={estilos.botoesLinha}>
-                <TouchableOpacity style={estilos.botaoCancelar} onPress={cancelarSenha}>
-                  <AppText style={estilos.botaoCancelarTexto}>Cancelar</AppText>
-                </TouchableOpacity>
-                <TouchableOpacity style={estilos.botaoSalvar} onPress={salvarSenha}>
-                  <AppText style={estilos.botaoSalvarTexto}>Salvar Senha</AppText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
 
         </ScrollView>
       </KeyboardAvoidingView>
@@ -636,7 +530,7 @@ const estilos = StyleSheet.create({
     marginBottom: 0,
   },
 
-  // Campo senha
+  // Campo senha (modal)
   senhaLinha: { flexDirection: 'row', alignItems: 'center' },
 
   // Seção de botões
@@ -663,7 +557,7 @@ const estilos = StyleSheet.create({
   botaoSecundarioTexto: { color: CORES.primaria, fontSize: FONTES.normal, fontWeight: '700' },
 
   // Botões inline (Cancelar + Salvar)
-  botoesLinha:          { flexDirection: 'row', gap: ESPACOS.sm },
+  botoesLinha:      { flexDirection: 'row', gap: ESPACOS.sm },
   botaoCancelar: {
     flex: 1,
     borderWidth: 1.5,

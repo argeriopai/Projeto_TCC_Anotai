@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   View, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Modal,
+  ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Modal, TouchableWithoutFeedback,
 } from 'react-native'
 import { AppText } from '../components/AppText'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -74,6 +74,7 @@ export function TelaMeuPerfil({ navigation }: Props) {
   const [telefone,    setTelefone]    = useState(proprietario?.telefone ?? '')
   const [telefoneErro, setTelefoneErro] = useState('')
 
+  const [modalFoto,            setModalFoto]            = useState(false)
   const [modalExcluir,         setModalExcluir]         = useState(false)
   const [senhaExclusao,        setSenhaExclusao]        = useState('')
   const [mostrarSenhaExclusao, setMostrarSenhaExclusao] = useState(false)
@@ -99,15 +100,7 @@ export function TelaMeuPerfil({ navigation }: Props) {
   }
 
   function selecionarFoto() {
-    const opcoes: any[] = [
-      { text: 'Tirar Foto',          onPress: () => capturarFoto('camera')  },
-      { text: 'Escolher da Galeria', onPress: () => capturarFoto('galeria') },
-    ]
-    if (proprietario?.fotoPerfil) {
-      opcoes.push({ text: 'Remover Foto', style: 'destructive', onPress: () => atualizarFotoPerfil(null) })
-    }
-    opcoes.push({ text: 'Cancelar', style: 'cancel' })
-    Alert.alert('Foto de Perfil', 'Escolha uma opção:', opcoes)
+    setModalFoto(true)
   }
 
   function handleTelefoneBlur() {
@@ -323,6 +316,72 @@ export function TelaMeuPerfil({ navigation }: Props) {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* MODAL FOTO DE PERFIL */}
+      <Modal
+        visible={modalFoto}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalFoto(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setModalFoto(false)}>
+          <View style={estilos.fotoModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={estilos.fotoModalCard}>
+                <AppText style={estilos.fotoModalTitulo}>Foto de Perfil</AppText>
+                <AppText style={estilos.fotoModalSubtitulo}>Escolha uma opção</AppText>
+
+                {proprietario?.fotoPerfil && (
+                  <TouchableOpacity
+                    style={estilos.fotoModalOpcao}
+                    onPress={() => { setModalFoto(false); atualizarFotoPerfil(null) }}
+                    accessible
+                    accessibilityLabel="Remover foto de perfil"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="trash-outline" size={20} color={CORES.erro} />
+                    <AppText style={[estilos.fotoModalOpcaoTexto, { color: CORES.erro }]}>Remover foto</AppText>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={estilos.fotoModalOpcao}
+                  onPress={() => { setModalFoto(false); setTimeout(() => capturarFoto('galeria'), 300) }}
+                  accessible
+                  accessibilityLabel="Escolher foto da galeria"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="images-outline" size={20} color={CORES.primaria} />
+                  <AppText style={estilos.fotoModalOpcaoTexto}>Escolher da galeria</AppText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={estilos.fotoModalOpcao}
+                  onPress={() => { setModalFoto(false); setTimeout(() => capturarFoto('camera'), 300) }}
+                  accessible
+                  accessibilityLabel="Tirar foto com a câmera"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="camera-outline" size={20} color={CORES.primaria} />
+                  <AppText style={estilos.fotoModalOpcaoTexto}>Tirar foto</AppText>
+                </TouchableOpacity>
+
+                <View style={estilos.fotoModalDivisoria} />
+
+                <TouchableOpacity
+                  style={estilos.fotoModalCancelar}
+                  onPress={() => setModalFoto(false)}
+                  accessible
+                  accessibilityLabel="Cancelar"
+                  accessibilityRole="button"
+                >
+                  <AppText style={estilos.fotoModalCancelarTexto}>Cancelar</AppText>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* MODAL EXCLUIR CONTA */}
       <Modal
@@ -577,6 +636,62 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
   },
   botaoSalvarTexto: { color: CORES.primaria, fontSize: FONTES.normal, fontWeight: '700' },
+
+  // Modal foto de perfil
+  fotoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  fotoModalCard: {
+    backgroundColor: CORES.branco,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: ESPACOS.md,
+    paddingHorizontal: ESPACOS.lg,
+    paddingBottom: Platform.OS === 'ios' ? 36 : ESPACOS.lg,
+  },
+  fotoModalTitulo: {
+    fontSize: FONTES.normal,
+    fontWeight: '700',
+    color: CORES.pretinho,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  fotoModalSubtitulo: {
+    fontSize: FONTES.pequena,
+    color: CORES.textoSecundario,
+    textAlign: 'center',
+    marginBottom: ESPACOS.md,
+  },
+  fotoModalOpcao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ESPACOS.sm,
+    paddingVertical: ESPACOS.md,
+    borderBottomWidth: 1,
+    borderBottomColor: CORES.cinzaClaro,
+  },
+  fotoModalOpcaoTexto: {
+    fontSize: FONTES.normal,
+    fontWeight: '500',
+    color: CORES.pretinho,
+  },
+  fotoModalDivisoria: {
+    height: 6,
+    backgroundColor: CORES.cinzaClaro,
+    marginHorizontal: -ESPACOS.lg,
+    marginTop: ESPACOS.sm,
+  },
+  fotoModalCancelar: {
+    paddingVertical: ESPACOS.md,
+    alignItems: 'center',
+  },
+  fotoModalCancelarTexto: {
+    fontSize: FONTES.normal,
+    fontWeight: '700',
+    color: CORES.textoSecundario,
+  },
 
   // Modal excluir conta
   modalOverlay: {

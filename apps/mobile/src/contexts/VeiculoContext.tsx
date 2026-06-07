@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { listarCarrosApi, listarMotosApi } from '../services/api'
 import { useAuth } from './AuthContext'
 
-const STORAGE_KEY = '@anotai:veiculo_ativo'
+const STORAGE_KEY = '@anotai:veiculoAtivo'
 
 export interface VeiculoAtivo {
   id: string
@@ -17,71 +17,67 @@ interface VeiculoContextData {
   veiculoAtivo: VeiculoAtivo | null
   definirVeiculoAtivo: (v: VeiculoAtivo | null) => Promise<void>
   veiculoAtivoId: string | null
-  ativarVeiculo: (id: string) => Promise<void>
 }
 
 const VeiculoContext = createContext<VeiculoContextData>({} as VeiculoContextData)
 
 export function VeiculoProvider({ children }: { children: React.ReactNode }) {
   const { estaLogado, carregando } = useAuth()
-  const [veiculoAtivo,   setVeiculoAtivoState] = useState<VeiculoAtivo | null>(null)
-  const [veiculoAtivoId, setVeiculoAtivoId]    = useState<string | null>(null)
+  const [veiculoAtivo, setVeiculoAtivoState] = useState<VeiculoAtivo | null>(null)
 
   useEffect(() => {
     if (carregando) return
+
     if (!estaLogado) {
       setVeiculoAtivoState(null)
-      setVeiculoAtivoId(null)
-      AsyncStorage.multiRemove([STORAGE_KEY, '@anotai:veiculoAtivo'])
+      AsyncStorage.removeItem(STORAGE_KEY)
+      return
     }
-  }, [estaLogado, carregando])
 
-  useEffect(() => {
-    async function carregarEValidar() {
-      const idSalvo = await AsyncStorage.getItem('@anotai:veiculoAtivo')
-      if (idSalvo) setVeiculoAtivoId(idSalvo)
-
-      const raw = await AsyncStorage.getItem(STORAGE_KEY)
-      if (!raw) return
+    // Auth confirmado — restaura o veículo pelo ID persistido
+    async function restaurar() {
+      const idSalvo = await AsyncStorage.getItem(STORAGE_KEY)
+      if (!idSalvo) return
 
       try {
-        const veiculo = JSON.parse(raw) as VeiculoAtivo
         const [resCarros, resMotos] = await Promise.all([
           listarCarrosApi(),
           listarMotosApi(),
         ])
-        const existe = [...resCarros.data, ...resMotos.data].some(v => v.id === veiculo.id)
-        if (existe) {
-          setVeiculoAtivoState(veiculo)
-        } else {
-          await AsyncStorage.removeItem(STORAGE_KEY)
+        const carro = resCarros.data.find((v: any) => v.id === idSalvo)
+        if (carro) {
+          setVeiculoAtivoState({ id: carro.id, tipo: 'carro', marca: carro.marca, modelo: carro.modelo, placa: carro.placa })
+          return
         }
-      } catch {
+        const moto = resMotos.data.find((v: any) => v.id === idSalvo)
+        if (moto) {
+          setVeiculoAtivoState({ id: moto.id, tipo: 'moto', marca: moto.marca, modelo: moto.modelo, placa: moto.placa })
+          return
+        }
+        // Veículo não existe mais — descarta o ID salvo
         await AsyncStorage.removeItem(STORAGE_KEY)
+      } catch {
+        // Auth ou rede não prontos — mantém o ID salvo para próxima tentativa
       }
     }
-    carregarEValidar()
-  }, [])
-
-  async function ativarVeiculo(id: string) {
-    setVeiculoAtivoId(id)
-    await AsyncStorage.setItem('@anotai:veiculoAtivo', id)
-  }
+    restaurar()
+  }, [estaLogado, carregando])
 
   async function definirVeiculoAtivo(v: VeiculoAtivo | null) {
     setVeiculoAtivoState(v)
-    setVeiculoAtivoId(v?.id ?? null)
     if (v) {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(v))
-      await AsyncStorage.setItem('@anotai:veiculoAtivo', v.id)
+      await AsyncStorage.setItem(STORAGE_KEY, v.id)
     } else {
       await AsyncStorage.removeItem(STORAGE_KEY)
-      await AsyncStorage.removeItem('@anotai:veiculoAtivo')
     }
   }
 
   return (
-    <VeiculoContext.Provider value={{ veiculoAtivo, definirVeiculoAtivo, veiculoAtivoId, ativarVeiculo }}>
+    <VeiculoContext.Provider value={{
+      veiculoAtivo,
+      definirVeiculoAtivo,
+      veiculoAtivoId: veiculoAtivo?.id ?? null,
+    }}>
       {children}
     </VeiculoContext.Provider>
   )

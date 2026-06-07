@@ -56,7 +56,7 @@ function NavIcon({ icone, lib, size, color }: { icone: string; lib?: LibIcon; si
 
 export function TelaHome({ navigation }: Props) {
   const { proprietario, estaLogado, logout } = useAuth()
-  const { veiculoAtivoId, ativarVeiculo, definirVeiculoAtivo } = useVeiculo()
+  const { veiculoAtivoId, definirVeiculoAtivo } = useVeiculo()
   const { requireAuth } = useAuthGuard()
   const apelido = proprietario?.apelido ?? proprietario?.nome?.split(' ')[0] ?? ''
 
@@ -317,11 +317,10 @@ export function TelaHome({ navigation }: Props) {
                     <TouchableOpacity
                       style={[estilos.cardVeiculo, ativo ? estilos.cardAtivo : estilos.cardInativo]}
                       onPress={() => {
+                        definirVeiculoAtivo({ id: item.id, tipo: item.tipo, marca: item.marca, modelo: item.modelo, placa: item.placa })
                         if (ativo) {
                           Alert.alert('Veículo ativo', 'Este veículo já está ativo.')
                         } else {
-                          ativarVeiculo(item.id)
-                          definirVeiculoAtivo({ id: item.id, tipo: item.tipo, marca: item.marca, modelo: item.modelo, placa: item.placa })
                           Alert.alert('Veículo ativado!', 'Este veículo será usado nos próximos registros.')
                         }
                       }}

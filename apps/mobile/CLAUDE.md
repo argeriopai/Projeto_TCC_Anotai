@@ -253,5 +253,19 @@ appId: "1:143171299379:web:6c191fb0e6a4e536665b46"
 - Garantia exibida no card de consulta de Peças
 - Exclusão de conta padronizada com ícone no header
 
+## Sprint 12 — Integração Cloudinary para fotos — CONCLUÍDO ✅
+
+- Cria `src/services/cloudinary.ts`: `uploadFotoCloudinary` + `uploadFotosCloudinary`
+  (fetch + FormData, unsigned upload; pass-through automático para URLs HTTPS já salvas)
+- Cloud name: `dlosqtpjn`, upload preset (unsigned): `uyh9pdge`
+- Adiciona `fotosServico?`, `fotosNotaFiscal?`, `fotosGarantia?` às interfaces `Servico` e `Peca` em `api.ts`
+- `fotosStorage.ts`: remove todas as funções AsyncStorage e `copiarFotoLocal` (morta);
+  mantém apenas tipos (`FotoRegistro`, `GaleriaVeiculo`, `TipoFoto`) e função `temFotos`
+- `TelaRegistrarServico` e `TelaRegistrarPeca`: carregam fotos do objeto `edit` (vem do Firestore);
+  após salvar, fazem upload → Cloudinary → atualizam Firestore; erro de foto não perde o registro
+- `TelaGaleria`: lê fotos de `listarServicosApi` / `listarPecasApi` (Firestore);
+  exclusão de foto individual atualiza o array no Firestore via `atualizarServicoApi`/`atualizarPecaApi`
+- `FotosModal`: duplicata de Alert em exclusão foi removida (alert já fica no FotosModal)
+
 ### Comando para recuperar contexto:
 "Leia o CLAUDE.md e retome o desenvolvimento"

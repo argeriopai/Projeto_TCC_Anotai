@@ -77,6 +77,9 @@ export interface Servico {
   telefoneProfissional?: string
   garantia?: string
   kilometragem?: string
+  fotosServico?: string[]
+  fotosNotaFiscal?: string[]
+  fotosGarantia?: string[]
 }
 
 export interface Peca {
@@ -91,6 +94,9 @@ export interface Peca {
   custo?: number
   estabelecimento?: string
   telefoneEstabelecimento?: string
+  fotosServico?: string[]
+  fotosNotaFiscal?: string[]
+  fotosGarantia?: string[]
 }
 
 export interface Notificacao {

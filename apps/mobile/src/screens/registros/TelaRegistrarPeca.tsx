@@ -18,7 +18,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
 import { AvatarCircular } from '../../components/AvatarCircular'
 import { FotosPicker, FotoSections, FOTOS_VAZIAS } from '../../components/FotosPicker'
-import { buscarFotos, salvarFotos, temFotos } from '../../utils/fotosStorage'
+import { uploadFotosCloudinary } from '../../services/cloudinary'
 import { useConfirmarSaida } from '../../hooks/useConfirmarSaida'
 
 interface Props { navigation: any; route: any }
@@ -93,8 +93,10 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
 
   useEffect(() => {
     if (edit?.id) {
-      buscarFotos(edit.id).then(f => {
-        if (f) setFotos({ fotosServico: f.fotosServico, fotosNotaFiscal: f.fotosNotaFiscal, fotosGarantia: f.fotosGarantia })
+      setFotos({
+        fotosServico:    edit.fotosServico    ?? [],
+        fotosNotaFiscal: edit.fotosNotaFiscal ?? [],
+        fotosGarantia:   edit.fotosGarantia   ?? [],
       })
     }
   }, [edit?.id])
@@ -164,21 +166,43 @@ export function TelaRegistrarPeca({ navigation, route }: Props) {
         garantia:                garantiaNumero.trim() ? `${garantiaNumero.trim()} ${garantiaUnidade}` : undefined,
       }
       try {
+        let registroId: string
         if (edit) {
           await atualizarPecaApi(edit.id, payload)
-          const rec = { veiculoId: veiculoId!, registroId: edit.id, tipoRegistro: 'peca' as const, nomeRegistro: nome.trim(), ...fotos }
-          if (temFotos(rec)) await salvarFotos(rec)
-          Alert.alert('Sucesso!', 'Peça atualizada com sucesso.', [
-            { text: 'OK', onPress: () => navigation.goBack() },
-          ])
+          registroId = edit.id
         } else {
           const res = await registrarPecaApi(payload)
-          const rec = { veiculoId: veiculoId!, registroId: res.data.id, tipoRegistro: 'peca' as const, nomeRegistro: nome.trim(), ...fotos }
-          if (temFotos(rec)) await salvarFotos(rec)
-          Alert.alert('Sucesso!', 'Peça registrada com sucesso.', [
-            { text: 'OK', onPress: () => navigation.goBack() },
-          ])
+          registroId = res.data.id
         }
+
+        const temQualquerFoto = fotos.fotosServico.length > 0 || fotos.fotosNotaFiscal.length > 0 || fotos.fotosGarantia.length > 0
+        if (temQualquerFoto || edit) {
+          try {
+            const [fsUrls, nfUrls, gaUrls] = await Promise.all([
+              uploadFotosCloudinary(fotos.fotosServico),
+              uploadFotosCloudinary(fotos.fotosNotaFiscal),
+              uploadFotosCloudinary(fotos.fotosGarantia),
+            ])
+            await atualizarPecaApi(registroId, {
+              fotosServico: fsUrls,
+              fotosNotaFiscal: nfUrls,
+              fotosGarantia: gaUrls,
+            })
+          } catch {
+            Alert.alert(
+              edit ? 'Peça atualizada!' : 'Peça registrada!',
+              'Porém não foi possível enviar as fotos. Edite o registro para tentar novamente.',
+              [{ text: 'OK', onPress: () => navigation.goBack() }]
+            )
+            return
+          }
+        }
+
+        Alert.alert(
+          'Sucesso!',
+          edit ? 'Peça atualizada com sucesso.' : 'Peça registrada com sucesso.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        )
       } catch (error: any) {
         Alert.alert('Erro', error.response?.data?.erro ?? 'Não foi possível salvar a peça.')
       } finally {

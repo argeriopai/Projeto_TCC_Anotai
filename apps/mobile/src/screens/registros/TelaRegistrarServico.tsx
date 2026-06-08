@@ -17,7 +17,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useAuthGuard } from '../../hooks/useAuthGuard'
 import { AvatarCircular } from '../../components/AvatarCircular'
 import { FotosPicker, FotoSections, FOTOS_VAZIAS } from '../../components/FotosPicker'
-import { buscarFotos, salvarFotos, temFotos } from '../../utils/fotosStorage'
+import { uploadFotosCloudinary } from '../../services/cloudinary'
 import { useConfirmarSaida } from '../../hooks/useConfirmarSaida'
 import { TIPOS_VEICULO_CARRO, TIPOS_VEICULO_MOTO } from '../../constants/tiposServico'
 
@@ -158,8 +158,10 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
 
   useEffect(() => {
     if (edit?.id) {
-      buscarFotos(edit.id).then(f => {
-        if (f) setFotos({ fotosServico: f.fotosServico, fotosNotaFiscal: f.fotosNotaFiscal, fotosGarantia: f.fotosGarantia })
+      setFotos({
+        fotosServico:    edit.fotosServico    ?? [],
+        fotosNotaFiscal: edit.fotosNotaFiscal ?? [],
+        fotosGarantia:   edit.fotosGarantia   ?? [],
       })
     }
   }, [edit?.id])
@@ -247,21 +249,43 @@ export function TelaRegistrarServico({ navigation, route }: Props) {
         kilometragem:            kilometragem.trim()            || undefined,
       }
       try {
+        let registroId: string
         if (edit) {
           await atualizarServicoApi(edit.id, payload)
-          const rec = { veiculoId: veiculoId!, registroId: edit.id, tipoRegistro: 'servico' as const, nomeRegistro: tipo.trim(), ...fotos }
-          if (temFotos(rec)) await salvarFotos(rec)
-          Alert.alert('Sucesso!', 'Serviço atualizado com sucesso.', [
-            { text: 'OK', onPress: () => navigation.goBack() },
-          ])
+          registroId = edit.id
         } else {
           const res = await registrarServicoApi(payload)
-          const rec = { veiculoId: veiculoId!, registroId: res.data.id, tipoRegistro: 'servico' as const, nomeRegistro: tipo.trim(), ...fotos }
-          if (temFotos(rec)) await salvarFotos(rec)
-          Alert.alert('Sucesso!', 'Serviço registrado com sucesso.', [
-            { text: 'OK', onPress: () => navigation.goBack() },
-          ])
+          registroId = res.data.id
         }
+
+        const temQualquerFoto = fotos.fotosServico.length > 0 || fotos.fotosNotaFiscal.length > 0 || fotos.fotosGarantia.length > 0
+        if (temQualquerFoto || edit) {
+          try {
+            const [fsUrls, nfUrls, gaUrls] = await Promise.all([
+              uploadFotosCloudinary(fotos.fotosServico),
+              uploadFotosCloudinary(fotos.fotosNotaFiscal),
+              uploadFotosCloudinary(fotos.fotosGarantia),
+            ])
+            await atualizarServicoApi(registroId, {
+              fotosServico: fsUrls,
+              fotosNotaFiscal: nfUrls,
+              fotosGarantia: gaUrls,
+            })
+          } catch {
+            Alert.alert(
+              edit ? 'Serviço atualizado!' : 'Serviço registrado!',
+              'Porém não foi possível enviar as fotos. Edite o registro para tentar novamente.',
+              [{ text: 'OK', onPress: () => navigation.goBack() }]
+            )
+            return
+          }
+        }
+
+        Alert.alert(
+          'Sucesso!',
+          edit ? 'Serviço atualizado com sucesso.' : 'Serviço registrado com sucesso.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        )
       } catch (error: any) {
         Alert.alert('Erro', error.response?.data?.erro ?? 'Não foi possível salvar o serviço.')
       } finally {

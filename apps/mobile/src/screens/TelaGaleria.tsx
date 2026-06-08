@@ -10,8 +10,8 @@ import { useFocusEffect } from '@react-navigation/native'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthGuard } from '../hooks/useAuthGuard'
 import { useVeiculo } from '../contexts/VeiculoContext'
-import { listarCarrosApi, listarMotosApi } from '../services/api'
-import { listarTodasFotos, FotoRegistro, temFotos, salvarFotos, buscarFotos } from '../utils/fotosStorage'
+import { listarCarrosApi, listarMotosApi, listarServicosApi, listarPecasApi, atualizarServicoApi, atualizarPecaApi } from '../services/api'
+import { FotoRegistro } from '../utils/fotosStorage'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
 import { FotosModal } from '../components/FotosModal'
 import { AvatarCircular } from '../components/AvatarCircular'
@@ -42,6 +42,7 @@ interface FotoGrupo {
   label: string
   categoria: CategoriaFoto
   registroId: string
+  tipoRegistro: 'servico' | 'peca'
 }
 
 interface ModalState {
@@ -50,6 +51,7 @@ interface ModalState {
   label: string
   registroId: string
   categoria: CategoriaFoto
+  tipoRegistro: 'servico' | 'peca'
 }
 
 export function TelaGaleria({ navigation }: Props) {
@@ -73,15 +75,42 @@ export function TelaGaleria({ navigation }: Props) {
   async function carregarGaleria() {
     setCarregando(true)
     try {
-      const [resCarros, resMotos, todasFotos] = await Promise.all([
+      const [resCarros, resMotos, resServicos, resPecas] = await Promise.all([
         listarCarrosApi(),
         listarMotosApi(),
-        listarTodasFotos(),
+        listarServicosApi(),
+        listarPecasApi(),
       ])
+
+      const temFoto = (s: string[] | undefined) => (s?.length ?? 0) > 0
+
+      const todasFotos: FotoRegistro[] = [
+        ...resServicos.data
+          .filter(s => temFoto(s.fotosServico) || temFoto(s.fotosNotaFiscal) || temFoto(s.fotosGarantia))
+          .map(s => ({
+            veiculoId:       s.veiculoId,
+            registroId:      s.id,
+            tipoRegistro:    'servico' as const,
+            nomeRegistro:    s.tipo,
+            fotosServico:    s.fotosServico    ?? [],
+            fotosNotaFiscal: s.fotosNotaFiscal ?? [],
+            fotosGarantia:   s.fotosGarantia   ?? [],
+          })),
+        ...resPecas.data
+          .filter(p => temFoto(p.fotosServico) || temFoto(p.fotosNotaFiscal) || temFoto(p.fotosGarantia))
+          .map(p => ({
+            veiculoId:       p.veiculoId,
+            registroId:      p.id,
+            tipoRegistro:    'peca' as const,
+            nomeRegistro:    p.nome,
+            fotosServico:    p.fotosServico    ?? [],
+            fotosNotaFiscal: p.fotosNotaFiscal ?? [],
+            fotosGarantia:   p.fotosGarantia   ?? [],
+          })),
+      ]
 
       const fotosMap = new Map<string, FotoRegistro[]>()
       for (const f of todasFotos) {
-        if (!temFotos(f)) continue
         const arr = fotosMap.get(f.veiculoId) ?? []
         arr.push(f)
         fotosMap.set(f.veiculoId, arr)
@@ -121,52 +150,44 @@ export function TelaGaleria({ navigation }: Props) {
 
   function fotosParaFiltro(reg: FotoRegistro): FotoGrupo[] {
     const resultado: FotoGrupo[] = []
+    const t = reg.tipoRegistro
     if ((filtro === 'todos' || filtro === 'servico') && reg.fotosServico.length > 0)
-      resultado.push({ uris: reg.fotosServico, label: reg.nomeRegistro || 'Sem descrição', categoria: 'fotosServico', registroId: reg.registroId })
+      resultado.push({ uris: reg.fotosServico, label: reg.nomeRegistro || 'Sem descrição', categoria: 'fotosServico', registroId: reg.registroId, tipoRegistro: t })
     if ((filtro === 'todos' || filtro === 'notaFiscal') && reg.fotosNotaFiscal.length > 0)
-      resultado.push({ uris: reg.fotosNotaFiscal, label: 'Nota Fiscal', categoria: 'fotosNotaFiscal', registroId: reg.registroId })
+      resultado.push({ uris: reg.fotosNotaFiscal, label: 'Nota Fiscal', categoria: 'fotosNotaFiscal', registroId: reg.registroId, tipoRegistro: t })
     if ((filtro === 'todos' || filtro === 'garantia') && reg.fotosGarantia.length > 0)
-      resultado.push({ uris: reg.fotosGarantia, label: 'Garantia', categoria: 'fotosGarantia', registroId: reg.registroId })
+      resultado.push({ uris: reg.fotosGarantia, label: 'Garantia', categoria: 'fotosGarantia', registroId: reg.registroId, tipoRegistro: t })
     return resultado
   }
 
-  function abrirFoto(uris: string[], indice: number, label: string, registroId: string, categoria: CategoriaFoto) {
-    setModalState({ fotos: uris, indice, label, registroId, categoria })
+  function abrirFoto(uris: string[], indice: number, label: string, registroId: string, categoria: CategoriaFoto, tipoRegistro: 'servico' | 'peca') {
+    setModalState({ fotos: uris, indice, label, registroId, categoria, tipoRegistro })
   }
 
-  function handleExcluirDaGaleria(indice: number) {
+  async function handleExcluirDaGaleria(indice: number) {
     if (!modalState) return
-    const { registroId, categoria } = modalState
-    Alert.alert(
-      'Excluir foto',
-      'Deseja excluir esta foto?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir', style: 'destructive',
-          onPress: async () => {
-            try {
-              const registro = await buscarFotos(registroId)
-              if (!registro) return
-              const novasFotos = registro[categoria].filter((_, i) => i !== indice)
-              await salvarFotos({ ...registro, [categoria]: novasFotos })
-              if (novasFotos.length === 0) {
-                setModalState(null)
-              } else {
-                setModalState(prev => prev ? {
-                  ...prev,
-                  fotos: novasFotos,
-                  indice: indice >= novasFotos.length ? novasFotos.length - 1 : indice,
-                } : null)
-              }
-              await carregarGaleria()
-            } catch {
-              Alert.alert('Erro', 'Não foi possível excluir a foto.', [{ text: 'OK' }])
-            }
-          },
-        },
-      ]
-    )
+    const { registroId, categoria, tipoRegistro } = modalState
+    const novasFotos = modalState.fotos.filter((_, i) => i !== indice)
+    try {
+      const update = { [categoria]: novasFotos }
+      if (tipoRegistro === 'servico') {
+        await atualizarServicoApi(registroId, update as any)
+      } else {
+        await atualizarPecaApi(registroId, update as any)
+      }
+      if (novasFotos.length === 0) {
+        setModalState(null)
+      } else {
+        setModalState(prev => prev ? {
+          ...prev,
+          fotos: novasFotos,
+          indice: indice >= novasFotos.length ? novasFotos.length - 1 : indice,
+        } : null)
+      }
+      await carregarGaleria()
+    } catch {
+      Alert.alert('Erro', 'Não foi possível excluir a foto.')
+    }
   }
 
   const totalFotos = veiculos.reduce((acc, v) =>
@@ -289,12 +310,12 @@ export function TelaGaleria({ navigation }: Props) {
                             </AppText>
                           </View>
 
-                          {grupos.map(({ uris, label, categoria, registroId }) => (
+                          {grupos.map(({ uris, label, categoria, registroId, tipoRegistro }) => (
                             <View key={label} style={es.grupoFotos}>
                               <AppText style={es.grupoLabel}>{label} ({uris.length})</AppText>
                               <View style={es.grade}>
                                 {uris.map((uri, idx) => (
-                                  <TouchableOpacity key={idx} onPress={() => abrirFoto(uris, idx, label, registroId, categoria)} activeOpacity={0.85}>
+                                  <TouchableOpacity key={idx} onPress={() => abrirFoto(uris, idx, label, registroId, categoria, tipoRegistro)} activeOpacity={0.85}>
                                     <Image source={{ uri }} style={es.thumbnail} />
                                   </TouchableOpacity>
                                 ))}

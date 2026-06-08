@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Image, Alert, Modal, ActivityIndicator, Platform,
+  ScrollView, Image, Alert, Modal, Platform,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { CORES, FONTES, ESPACOS } from '../constants/cores'
-import { FotoRegistro, buscarFotos, salvarFotos } from '../utils/fotosStorage'
+import { atualizarServicoApi, atualizarPecaApi } from '../services/api'
 import { FotosModal } from './FotosModal'
 
 type SecaoKey = 'fotosServico' | 'fotosNotaFiscal' | 'fotosGarantia'
@@ -16,42 +16,52 @@ const SECOES: { key: SecaoKey; label: string; icone: string }[] = [
   { key: 'fotosGarantia',   label: 'Garantia',               icone: 'document-text-outline' },
 ]
 
+interface FotoState {
+  fotosServico: string[]
+  fotosNotaFiscal: string[]
+  fotosGarantia: string[]
+}
+
 interface Props {
   visivel: boolean
   registroId: string
   veiculoId: string
   tipoRegistro: 'servico' | 'peca'
+  fotosIniciais: FotoState
   onFechar: () => void
 }
 
-export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro, onFechar }: Props) {
-  const [registro, setRegistro]   = useState<FotoRegistro>({
-    veiculoId, registroId, tipoRegistro,
-    fotosServico: [], fotosNotaFiscal: [], fotosGarantia: [],
-  })
-  const [carregando, setCarregando] = useState(true)
+export function FotosViewerModal({ visivel, registroId, tipoRegistro, fotosIniciais, onFechar }: Props) {
+  const [fotos,       setFotos]       = useState<FotoState>({ fotosServico: [], fotosNotaFiscal: [], fotosGarantia: [] })
+  const [salvando,    setSalvando]    = useState(false)
   const [modalSecao,  setModalSecao]  = useState<SecaoKey>('fotosServico')
   const [modalIndice, setModalIndice] = useState(0)
   const [modalAberto, setModalAberto] = useState(false)
 
   useEffect(() => {
-    if (visivel) carregarFotos()
+    if (visivel) {
+      setFotos({
+        fotosServico:    fotosIniciais.fotosServico,
+        fotosNotaFiscal: fotosIniciais.fotosNotaFiscal,
+        fotosGarantia:   fotosIniciais.fotosGarantia,
+      })
+    }
   }, [visivel, registroId])
 
-  async function carregarFotos() {
-    setCarregando(true)
-    const found = await buscarFotos(registroId)
-    if (found) {
-      setRegistro(found)
-    } else {
-      setRegistro({ veiculoId, registroId, tipoRegistro, fotosServico: [], fotosNotaFiscal: [], fotosGarantia: [] })
+  async function atualizarFotos(novasFotos: FotoState) {
+    setFotos(novasFotos)
+    setSalvando(true)
+    try {
+      if (tipoRegistro === 'servico') {
+        await atualizarServicoApi(registroId, novasFotos)
+      } else {
+        await atualizarPecaApi(registroId, novasFotos)
+      }
+    } catch {
+      Alert.alert('Erro', 'Não foi possível excluir a foto.')
+    } finally {
+      setSalvando(false)
     }
-    setCarregando(false)
-  }
-
-  async function atualizar(novoRegistro: FotoRegistro) {
-    setRegistro(novoRegistro)
-    await salvarFotos(novoRegistro)
   }
 
   function removerFoto(secao: SecaoKey, indice: number) {
@@ -62,9 +72,9 @@ export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro,
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Excluir', style: 'destructive',
-          onPress: async () => {
-            const novo = { ...registro, [secao]: registro[secao].filter((_, i) => i !== indice) }
-            await atualizar(novo)
+          onPress: () => {
+            const novo = { ...fotos, [secao]: fotos[secao].filter((_, i) => i !== indice) }
+            atualizarFotos(novo)
           },
         },
       ]
@@ -78,9 +88,9 @@ export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro,
   }
 
   function handleExcluirModal(indice: number) {
-    const novas = registro[modalSecao].filter((_, i) => i !== indice)
-    const novo = { ...registro, [modalSecao]: novas }
-    atualizar(novo)
+    const novas = fotos[modalSecao].filter((_, i) => i !== indice)
+    const novo = { ...fotos, [modalSecao]: novas }
+    atualizarFotos(novo)
     if (novas.length === 0) setModalAberto(false)
     else if (indice >= novas.length) setModalIndice(novas.length - 1)
   }
@@ -89,7 +99,6 @@ export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro,
     <Modal visible={visivel} animationType="slide" onRequestClose={onFechar}>
       <View style={es.container}>
 
-        {/* Header */}
         <View style={es.header}>
           <Text style={es.headerTitulo}>Fotos do Registro</Text>
           <TouchableOpacity onPress={onFechar} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -97,45 +106,44 @@ export function FotosViewerModal({ visivel, registroId, veiculoId, tipoRegistro,
           </TouchableOpacity>
         </View>
 
-        {carregando ? (
-          <View style={es.carregando}>
-            <ActivityIndicator size="large" color={CORES.secundaria} />
-          </View>
-        ) : (
-          <ScrollView contentContainerStyle={es.conteudo} showsVerticalScrollIndicator={false}>
-            {SECOES.map(({ key, label, icone }) => {
-              const lista = registro[key]
-              return (
-                <View key={key} style={es.secao}>
-                  <View style={es.secaoHeader}>
-                    <Ionicons name={icone as any} size={16} color={CORES.secundaria} />
-                    <Text style={es.secaoLabel}>{label}</Text>
-                    <Text style={es.contador}>{lista.length}/5</Text>
-                  </View>
-
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={es.fotosScroll}>
-                    {lista.length === 0 ? (
-                      <Text style={es.semFotos}>Sem fotos</Text>
-                    ) : lista.map((uri, idx) => (
-                      <View key={idx} style={es.thumbWrap}>
-                        <TouchableOpacity onPress={() => abrirModal(key, idx)} activeOpacity={0.85}>
-                          <Image source={{ uri }} style={es.thumb} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={es.btnRemover} onPress={() => removerFoto(key, idx)} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-                          <Ionicons name="trash" size={11} color={CORES.branco} />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </ScrollView>
+        <ScrollView contentContainerStyle={es.conteudo} showsVerticalScrollIndicator={false}>
+          {SECOES.map(({ key, label, icone }) => {
+            const lista = fotos[key]
+            return (
+              <View key={key} style={es.secao}>
+                <View style={es.secaoHeader}>
+                  <Ionicons name={icone as any} size={16} color={CORES.secundaria} />
+                  <Text style={es.secaoLabel}>{label}</Text>
+                  <Text style={es.contador}>{lista.length}/5</Text>
                 </View>
-              )
-            })}
-          </ScrollView>
-        )}
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={es.fotosScroll}>
+                  {lista.length === 0 ? (
+                    <Text style={es.semFotos}>Sem fotos</Text>
+                  ) : lista.map((uri, idx) => (
+                    <View key={idx} style={es.thumbWrap}>
+                      <TouchableOpacity onPress={() => abrirModal(key, idx)} activeOpacity={0.85}>
+                        <Image source={{ uri }} style={es.thumb} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={es.btnRemover}
+                        onPress={() => removerFoto(key, idx)}
+                        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                        disabled={salvando}
+                      >
+                        <Ionicons name="trash" size={11} color={CORES.branco} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            )
+          })}
+        </ScrollView>
 
         <FotosModal
           visivel={modalAberto}
-          fotos={registro[modalSecao]}
+          fotos={fotos[modalSecao]}
           indiceInicial={modalIndice}
           categoriaLabel={SECOES.find(s => s.key === modalSecao)?.label ?? ''}
           onFechar={() => setModalAberto(false)}
@@ -164,11 +172,6 @@ const es = StyleSheet.create({
     color: CORES.branco,
     fontSize: FONTES.media,
     fontWeight: '700',
-  },
-  carregando: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   conteudo: {
     padding: ESPACOS.md,

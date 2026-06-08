@@ -15,7 +15,6 @@ import { CORES, FONTES, ESPACOS } from '../../constants/cores'
 import { BottomNavBar } from '../../components/BottomNavBar'
 import { FotosViewerModal } from '../../components/FotosViewerModal'
 import { AvatarCircular } from '../../components/AvatarCircular'
-import { listarTodasFotos, FotoRegistro, temFotos } from '../../utils/fotosStorage'
 
 interface Props { navigation: any }
 
@@ -32,9 +31,7 @@ export function TelaPecas({ navigation }: Props) {
   const [lista,           setLista]           = useState<Peca[]>([])
   const [carregando,      setCarregando]      = useState(true)
   const [cardSelecionado, setCardSelecionado] = useState<string | null>(null)
-  const [fotosMap,        setFotosMap]        = useState<Map<string, FotoRegistro>>(new Map())
-  const [viewerId,        setViewerId]        = useState<string | null>(null)
-  const [viewerVeiculoId, setViewerVeiculoId] = useState<string>('')
+  const [viewerItem,      setViewerItem]      = useState<Peca | null>(null)
 
   useFocusEffect(
     useCallback(() => {
@@ -50,12 +47,9 @@ export function TelaPecas({ navigation }: Props) {
         setLista([])
         return
       }
-      const [res, todasFotos] = await Promise.all([listarPecasApi(), listarTodasFotos()])
+      const res = await listarPecasApi()
       const dados = res.data.filter(p => p.veiculoId === veiculoAtivo.id)
       setLista([...dados].sort((a, b) => b.data.localeCompare(a.data)))
-      const mapa = new Map<string, FotoRegistro>()
-      for (const f of todasFotos) mapa.set(f.registroId, f)
-      setFotosMap(mapa)
     } catch {
       setLista([])
     } finally {
@@ -259,11 +253,11 @@ export function TelaPecas({ navigation }: Props) {
                 </AppText>
               )}
 
-              {/* Botão fotos — só exibido quando há fotos */}
-              {fotosMap.get(item.id) && temFotos(fotosMap.get(item.id)!) && (
+              {/* Botão fotos — só exibido quando há fotos no Firestore */}
+              {((item.fotosServico?.length ?? 0) > 0 || (item.fotosNotaFiscal?.length ?? 0) > 0 || (item.fotosGarantia?.length ?? 0) > 0) && (
                 <TouchableOpacity
                   style={estilos.btnFotos}
-                  onPress={() => { setViewerId(item.id); setViewerVeiculoId(item.veiculoId) }}
+                  onPress={() => setViewerItem(item)}
                 >
                   <Ionicons name="camera-outline" size={13} color={CORES.branco} />
                   <AppText style={estilos.btnFotosTexto}>Ver Fotos</AppText>
@@ -278,13 +272,18 @@ export function TelaPecas({ navigation }: Props) {
 
       <BottomNavBar ativa="pecas" navigation={navigation} />
 
-      {viewerId && (
+      {viewerItem && (
         <FotosViewerModal
-          visivel={!!viewerId}
-          registroId={viewerId}
-          veiculoId={viewerVeiculoId}
+          visivel={!!viewerItem}
+          registroId={viewerItem.id}
+          veiculoId={viewerItem.veiculoId}
           tipoRegistro="peca"
-          onFechar={() => { setViewerId(null); carregarDados() }}
+          fotosIniciais={{
+            fotosServico:    viewerItem.fotosServico    ?? [],
+            fotosNotaFiscal: viewerItem.fotosNotaFiscal ?? [],
+            fotosGarantia:   viewerItem.fotosGarantia   ?? [],
+          }}
+          onFechar={() => { setViewerItem(null); carregarDados() }}
         />
       )}
     </SafeAreaView>

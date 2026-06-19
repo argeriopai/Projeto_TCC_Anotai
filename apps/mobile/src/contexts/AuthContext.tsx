@@ -9,8 +9,9 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
 } from 'firebase/auth'
-import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore'
+import { collection, query, where, getDocs, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../services/firebase'
+import { uploadFotoCloudinary } from '../services/cloudinary'
 import { api } from '../services/api'
 
 // ─── Interfaces (idênticas — nenhuma tela quebra) ──────────────────────────────
@@ -61,9 +62,20 @@ async function montarProprietario(uid: string, email: string): Promise<Proprieta
     }
   } catch { /* ignora */ }
   try {
-    const fotoSalva = await AsyncStorage.getItem(fotoKey(uid))
-    if (fotoSalva) dados.fotoPerfil = fotoSalva
-  } catch { /* ignora */ }
+    const snap = await getDoc(doc(db, 'usuarios', uid))
+    if (snap.exists() && snap.data()?.fotoPerfil) {
+      dados.fotoPerfil = snap.data()!.fotoPerfil
+      await AsyncStorage.setItem(fotoKey(uid), dados.fotoPerfil!)
+    } else {
+      const fotoSalva = await AsyncStorage.getItem(fotoKey(uid))
+      if (fotoSalva) dados.fotoPerfil = fotoSalva
+    }
+  } catch {
+    try {
+      const fotoSalva = await AsyncStorage.getItem(fotoKey(uid))
+      if (fotoSalva) dados.fotoPerfil = fotoSalva
+    } catch { /* ignora */ }
+  }
   return dados
 }
 
@@ -164,16 +176,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await Promise.all(snap.docs.map(d => deleteDoc(d.ref)))
     }
     await deleteUser(user)
+    try {
+      await deleteDoc(doc(db, 'usuarios', uid))
+    } catch { /* ignora */ }
     await AsyncStorage.multiRemove([fotoKey(uid), perfilKey(uid)])
     await logout()
   }
 
   async function atualizarFotoPerfil(uri: string | null) {
     if (!proprietario) return
-    const atualizado: Proprietario = { ...proprietario, fotoPerfil: uri ?? undefined }
-    setProprietario(atualizado)
+    let urlFinal: string | undefined
     if (uri) {
-      await AsyncStorage.setItem(fotoKey(proprietario.id), uri)
+      try {
+        urlFinal = await uploadFotoCloudinary(uri)
+      } catch (error) {
+        console.error('Erro ao fazer upload da foto:', error)
+        throw error
+      }
+    }
+    const atualizado: Proprietario = { ...proprietario, fotoPerfil: urlFinal }
+    setProprietario(atualizado)
+    try {
+      await setDoc(doc(db, 'usuarios', proprietario.id), { fotoPerfil: urlFinal ?? null }, { merge: true })
+    } catch (error) {
+      console.error('Erro ao salvar foto no Firestore:', error)
+    }
+    if (urlFinal) {
+      await AsyncStorage.setItem(fotoKey(proprietario.id), urlFinal)
     } else {
       await AsyncStorage.removeItem(fotoKey(proprietario.id))
     }
